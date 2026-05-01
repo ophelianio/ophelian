@@ -29,8 +29,26 @@ class ModelAdapter(ABC):
         hyperparameters: dict[str, Any],
         epochs: int | None,
         batch_size: int | None,
+        resume_from: Path | None = None,
+        checkpoint_dir: Path | None = None,
     ) -> Any:
-        """Train and return a model object the adapter can later serialise."""
+        """Train and return a model object the adapter can later serialise.
+
+        Adapters that support mid-training checkpointing (e.g. the
+        PyTorch adapter) should:
+
+        * write intermediate state into ``checkpoint_dir`` periodically
+          (the EC2 worker uploads that directory to S3 on SIGTERM, which
+          AWS sends ~2 minutes before reclaiming a spot instance), and
+        * if ``resume_from`` is provided, pre-load weights from it
+          before continuing training so a spot interruption resumes
+          where it left off rather than restarting the whole step.
+
+        Adapters that don't support resume are free to ignore both
+        arguments (they are keyword-only with defaults) — the worker
+        will then simply re-run the step from scratch on retry, which
+        matches the previous step-level resume behaviour.
+        """
 
     @abstractmethod
     def save(self, model: Any, path: Path) -> Path:

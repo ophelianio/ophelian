@@ -308,18 +308,29 @@ class StandaloneProvider(Provider):
         node: Train,
         step_dir: Path,
         artifacts: Mapping[str, Mapping[str, str]],
+        *,
+        resume_from: Path | None = None,
     ) -> StepResult:
         data_artifacts = artifacts.get(node.data, {})
         dataset = self._load_dataset(data_artifacts)
         from ophelian.models import registry
 
         adapter = registry.get(node.framework)()
+        # ``checkpoint_dir`` is wired into every Train run so adapters
+        # that emit periodic checkpoints (e.g. PyTorch) have a stable
+        # filesystem location to write into. The EC2 worker's SIGTERM
+        # handler uploads this directory to S3 on spot reclamation, and
+        # the next attempt downloads it as ``resume_from``.
+        checkpoint_dir = step_dir / "checkpoint"
+        checkpoint_dir.mkdir(parents=True, exist_ok=True)
         model = adapter.train(
             model=node.model,
             data=dataset,
             hyperparameters=node.hyperparameters,
             epochs=node.epochs,
             batch_size=node.batch_size,
+            resume_from=resume_from,
+            checkpoint_dir=checkpoint_dir,
         )
         model_dir = step_dir / "model"
         model_dir.mkdir(parents=True, exist_ok=True)
@@ -329,6 +340,7 @@ class StandaloneProvider(Provider):
             "model": node.model,
             "hyperparameters": node.hyperparameters,
             "artifact": str(artifact_path),
+            "resumed": resume_from is not None,
         }
         (model_dir / "ophelian.json").write_text(json.dumps(descriptor, indent=2, default=str))
         return StepResult(
@@ -336,7 +348,11 @@ class StandaloneProvider(Provider):
             kind=node.kind,
             status="success",
             artifacts={"model": str(model_dir), "artifact": str(artifact_path)},
-            info={"framework": node.framework, "mode": self._mode},
+            info={
+                "framework": node.framework,
+                "mode": self._mode,
+                "resumed_from": str(resume_from) if resume_from else "",
+            },
         )
 
     def _handle_tune(

@@ -49,12 +49,26 @@ pytorch = ["torch>=2.2"]
 huggingface = ["transformers>=4.40", "torch>=2.2"]
 sklearn = ["scikit-learn>=1.4", "joblib>=1.4"]
 xgboost = ["xgboost>=2.0"]
+aws = [
+    "boto3>=1.34",
+    "botocore>=1.34",
+    "paramiko>=3.4",
+]
+eks = [
+    "boto3>=1.34",
+    "botocore>=1.34",
+    "kubernetes>=29.0",
+]
 all = [
     "torch>=2.2",
     "transformers>=4.40",
     "scikit-learn>=1.4",
     "joblib>=1.4",
     "xgboost>=2.0",
+    "boto3>=1.34",
+    "botocore>=1.34",
+    "paramiko>=3.4",
+    "kubernetes>=29.0",
 ]
 dev = [
     "ruff>=0.6",
@@ -63,6 +77,10 @@ dev = [
     "pytest-cov>=5.0",
     "pre-commit>=3.7",
     "types-docker>=7.1",
+    "boto3>=1.34",
+    "botocore>=1.34",
+    "moto>=5.0",
+    "paramiko>=3.4",
 ]
 
 [project.scripts]
@@ -142,6 +160,8 @@ module = [
     "cloudpickle",
     "joblib",
     "pandas",
+    "boto3",
+    "kubernetes",
 ]
 ignore_missing_imports = true
 
@@ -151,6 +171,7 @@ addopts = ["-ra", "--strict-markers", "--strict-config"]
 testpaths = ["tests"]
 markers = [
     "integration: integration tests requiring a real Docker daemon",
+    "aws_integration: integration tests that hit a real AWS account (opt-in)",
 ]
 
 [tool.coverage.run]

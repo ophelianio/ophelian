@@ -22,8 +22,18 @@ class SklearnAdapter(ModelAdapter):
         hyperparameters: dict[str, Any],
         epochs: int | None,
         batch_size: int | None,
+        resume_from: Path | None = None,
+        checkpoint_dir: Path | None = None,
     ) -> Any:
-        del epochs, batch_size  # sklearn ignores these
+        del epochs, batch_size, checkpoint_dir  # sklearn ignores these
+        if resume_from is not None:
+            import logging
+
+            logging.getLogger(__name__).warning(
+                "SklearnAdapter does not support mid-training resume — "
+                "ignoring resume_from=%s and re-fitting from scratch.",
+                resume_from,
+            )
         estimator_cls = self._resolve_estimator(model)
         estimator = estimator_cls(**hyperparameters)
         if isinstance(data, dict) and "X" in data and "y" in data:

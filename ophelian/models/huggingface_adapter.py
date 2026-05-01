@@ -20,8 +20,15 @@ class HuggingFaceAdapter(ModelAdapter):
         hyperparameters: dict[str, Any],
         epochs: int | None,
         batch_size: int | None,
+        resume_from: Path | None = None,
+        checkpoint_dir: Path | None = None,
     ) -> Any:
         del batch_size
+        # The HuggingFace ``Trainer`` already supports resume via
+        # ``output_dir``; if the caller pinned a checkpoint_dir we route
+        # ``output_dir`` there so intermediate state survives spot
+        # interruption, and we forward ``resume_from`` to ``trainer.train``
+        # when it points at an existing checkpoint folder.
         from transformers import (
             AutoModelForCausalLM,
             AutoTokenizer,
@@ -33,15 +40,16 @@ class HuggingFaceAdapter(ModelAdapter):
         net = AutoModelForCausalLM.from_pretrained(model, **hyperparameters)
         if data is None:
             return {"model": net, "tokenizer": tokenizer}
+        out_dir = str(checkpoint_dir) if checkpoint_dir is not None else "/tmp/ophelian-hf"
         args = TrainingArguments(
-            output_dir="/tmp/ophelian-hf",
+            output_dir=out_dir,
             num_train_epochs=epochs or 1,
             per_device_train_batch_size=hyperparameters.get("per_device_train_batch_size", 4),
             logging_steps=10,
-            save_steps=10_000,
+            save_steps=hyperparameters.get("save_steps", 500),
         )
         trainer = Trainer(model=net, args=args, train_dataset=data, tokenizer=tokenizer)
-        trainer.train()
+        trainer.train(resume_from_checkpoint=str(resume_from) if resume_from is not None else None)
         return {"model": net, "tokenizer": tokenizer}
 
     def save(self, model: Any, path: Path) -> Path:

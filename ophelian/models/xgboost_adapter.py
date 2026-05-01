@@ -21,8 +21,19 @@ class XGBoostAdapter(ModelAdapter):
         hyperparameters: dict[str, Any],
         epochs: int | None,
         batch_size: int | None,
+        resume_from: Path | None = None,
+        checkpoint_dir: Path | None = None,
     ) -> Any:
-        del batch_size
+        del batch_size, checkpoint_dir
+        if resume_from is not None:
+            import logging
+
+            logging.getLogger(__name__).warning(
+                "XGBoostAdapter resume support is best-effort: %s will be "
+                "loaded as the starting booster if it points at an "
+                "xgb.save_model output.",
+                resume_from,
+            )
         import xgboost as xgb
 
         params = dict(hyperparameters)

@@ -13,8 +13,8 @@ def test_put_and_get_file(tmp_path: Path) -> None:
     src = tmp_path / "model.bin"
     src.write_bytes(b"weights")
 
-    stored = store.put("models/v1/model.bin", src)
-    assert stored.exists()
+    uri = store.put("models/v1/model.bin", src)
+    assert uri.startswith("file://")
     assert store.exists("models/v1/model.bin")
     fetched = store.get("models/v1/model.bin")
     assert fetched.read_bytes() == b"weights"

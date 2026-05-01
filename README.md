@@ -6,12 +6,14 @@ Ophelian is a small, opinionated Python framework for taking ML / AI prototypes
 to production without rewriting them every time the runtime changes. You write
 a **Pipeline** with declarative nodes (`Data`, `Train`, `Tune`, `Eval`,
 `Deploy`) and the framework compiles it into an execution plan that an **env**
-(a backend) knows how to run. Today the only env is `Standalone(local=True)`,
-which runs every step **in a local Docker container** when a Docker daemon is
+(a backend) knows how to run. Today there are two envs: `Standalone(local=True)`
+runs every step **in a local Docker container** when a Docker daemon is
 available — and falls back to running the same logic in-process when it isn't,
 so notebooks, CI without Docker, and quick experiments still work without any
-configuration. AWS / GCP / Azure envs land in upcoming milestones; pipelines
-do not change.
+configuration. `AWS(region=..., instance=..., spot=True)` runs the same
+pipeline on real EC2 (or EKS) workers with S3-backed artifacts and automatic
+resume on spot interruption — see [`docs/aws.md`](docs/aws.md). GCP / Azure
+envs land in upcoming milestones; pipelines do not change.
 
 ## Vision
 
@@ -36,7 +38,9 @@ do not change.
    │                             auto-fallback to       │
    │                             in-process if no       │
    │                             daemon)                │
-   │   AWS / GCP / Azure       ← v0.5+                 │
+   │   AWS(region=…, spot=True) ← v0.5 (EC2/EKS, S3,   │
+   │                              spot-resume)          │
+   │   GCP / Azure             ← v0.6+                 │
    │   Multi-cloud + auto-router ← v1.0                │
    └───────────────────────────────────────────────────┘
 ```
@@ -46,6 +50,8 @@ do not change.
 ```bash
 pip install -e .                  # core framework
 pip install -e '.[sklearn]'       # add a specific framework adapter
+pip install -e '.[aws]'           # AWS env (boto3 + paramiko)
+pip install -e '.[aws,eks]'       # AWS env + Kubernetes/EKS backend
 pip install -e '.[all,dev]'       # everything, including dev tooling
 ```
 
@@ -80,6 +86,42 @@ Run it:
 ```bash
 ophelian run examples/sklearn_pipeline.py
 ```
+
+## Quickstart — AWS
+
+The same pipeline runs on real EC2 by swapping the env. Artifacts are written
+to S3, the worker is torn down in a `finally` block, and spot interruptions
+are checkpointed so you can resume from where you left off.
+
+```python
+from ophelian import AWS, Data, Eval, Pipeline, Train
+
+env = AWS(
+    region="us-east-1",
+    instance="g4dn.xlarge",
+    spot=True,
+    artifact_bucket="my-ophelian-bucket",
+    iam_role="ophelian-worker",
+)
+
+result = Pipeline([
+    Data(name="ds", source="s3://my-ophelian-bucket/datasets/iris.jsonl", format="jsonl"),
+    Train(name="trainer", framework="sklearn",
+          model="sklearn.linear_model.LogisticRegression", data="ds"),
+    Eval(name="ev", model="trainer", data="ds", metrics=("accuracy",)),
+]).run(env=env)
+
+if not result.succeeded:
+    failed = next(s for s in result.steps if s.status == "failed")
+    if failed.info.get("resumable"):
+        env = env.with_resume(run_id=failed.info["run_id"])
+        result = Pipeline([...]).run(env=env)   # picks up after the last completed step
+```
+
+See [`docs/aws.md`](docs/aws.md) for credentials, the minimal IAM policy,
+the spot/resume protocol, the optional EKS backend, and per-workload cost
+estimates. End-to-end demos for XGBoost, ResNet, and HuggingFace LLMs live
+in [`examples/aws/`](examples/aws/).
 
 ## Other frameworks
 

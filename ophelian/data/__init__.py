@@ -31,6 +31,9 @@ def materialize(node: Data) -> dict[str, Any]:
     Adapters expect this shape. Loaders that can't produce X/y (because the
     source is a remote bucket or HF dataset we don't yet support) raise a
     descriptive error instead of silently returning empty data.
+
+    ``s3://`` sources are downloaded transparently to a local temp file and
+    then materialised through the same per-format loader.
     """
     fmt = node.format
     if fmt == "inline":
@@ -109,6 +112,10 @@ def _resolve_local_path(source: str) -> Path:
     parsed = urlparse(source)
     if parsed.scheme in {"", "file"}:
         path = Path(parsed.path or source.removeprefix("file://"))
+    elif parsed.scheme == "s3":
+        from ophelian.stores.s3 import fetch_s3_object_to_tempfile
+
+        path = fetch_s3_object_to_tempfile(source)
     else:
         raise NotImplementedError(f"Standalone loader cannot fetch remote source {source!r} yet.")
     if not path.exists():

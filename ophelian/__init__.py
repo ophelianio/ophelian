@@ -17,9 +17,10 @@ from ophelian.core import (
     Train,
     Tune,
 )
-from ophelian.envs import Standalone
+from ophelian.envs import AWS, Standalone
 
 __all__ = [
+    "AWS",
     "Data",
     "Deploy",
     "Eval",

@@ -231,9 +231,7 @@ class StandaloneProvider(Provider):
         with bind_run(getattr(self, "_run_id", None) or pipeline.name):
             return self._execute_bound(pipeline, plan)
 
-    def _execute_bound(
-        self, pipeline: Pipeline, plan: ExecutionPlan
-    ) -> PipelineResult:
+    def _execute_bound(self, pipeline: Pipeline, plan: ExecutionPlan) -> PipelineResult:
         # In container mode, pre-extend the runtime extras with whatever
         # frameworks the pipeline actually uses so the image we build can
         # `import` the relevant adapter dependencies.

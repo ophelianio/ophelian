@@ -1,32 +1,49 @@
 default_language_version:
-  python: python3.11
+  python: python3
 
 default_stages: [pre-commit, pre-push]
 
+# Ruff and mypy run via `uv run` so contributors always use the
+# exact versions pinned in `uv.lock`. This avoids the drift you
+# get when pinning a separate `rev:` for the ruff hook (the hook
+# fossilises while the project's ruff keeps moving).
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v5.0.0
     hooks:
       - id: trailing-whitespace
+        exclude: ^(\.replit|\.replitignore)$
       - id: end-of-file-fixer
+        exclude: ^(\.replit|\.replitignore)$
       - id: check-yaml
       - id: check-toml
+      - id: check-merge-conflict
       - id: check-added-large-files
         args: ["--maxkb=1024"]
 
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.6.9
+  - repo: local
     hooks:
-      - id: ruff
-        args: ["--fix"]
-      - id: ruff-format
+      - id: ruff-check
+        name: ruff (lint, project version)
+        entry: uv run ruff check --fix
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
+        pass_filenames: false
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.11.2
-    hooks:
+      - id: ruff-format
+        name: ruff (format, project version)
+        entry: uv run ruff format
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
+        pass_filenames: false
+
       - id: mypy
-        additional_dependencies:
-          - "pydantic>=2.7"
-          - "types-docker>=7.1"
-        args: ["--config-file=pyproject.toml"]
-        files: "^ophelian/"
+        name: mypy --strict (project version)
+        entry: uv run mypy ophelian
+        language: system
+        types: [python]
+        files: ^ophelian/
+        require_serial: true
+        pass_filenames: false

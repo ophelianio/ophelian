@@ -108,8 +108,7 @@ class CredentialError(RuntimeError):
 
 def _missing_aws_extra(component: str) -> ImportError:
     return ImportError(
-        f"AWS {component} support requires the optional `aws` extra: "
-        "`pip install 'ophelian[aws]'`."
+        f"AWS {component} support requires the optional `aws` extra: `pip install 'ophelian[aws]'`."
     )
 
 
@@ -305,10 +304,7 @@ class EC2Driver:
                         {"Key": "ophelian/run-id", "Value": request.run_id},
                         {"Key": "ophelian/pipeline", "Value": request.pipeline_name},
                         {"Key": "ophelian/step", "Value": request.step_name},
-                        *(
-                            {"Key": k, "Value": v}
-                            for k, v in cfg.instance_tags.items()
-                        ),
+                        *({"Key": k, "Value": v} for k, v in cfg.instance_tags.items()),
                     ],
                 }
             ],
@@ -354,9 +350,7 @@ class EC2Driver:
                         f"EC2 instance {instance_id} reached unexpected state {state!r}"
                     )
             self._sleep(self._config.poll_interval_seconds)
-        raise TimeoutError(
-            f"Timed out waiting for instance {instance_id} to reach 'running' state"
-        )
+        raise TimeoutError(f"Timed out waiting for instance {instance_id} to reach 'running' state")
 
     def _wait_for_result(
         self,
@@ -715,8 +709,14 @@ class EKSDriver:
                                 "image": cfg.runtime_image,
                                 "ports": [{"containerPort": node.port}],
                                 "env": [
-                                    {"name": "OPHELIAN_FRAMEWORK", "value": _serve_framework(request)},
-                                    {"name": "OPHELIAN_MODEL_URI", "value": _serve_model_uri(request)},
+                                    {
+                                        "name": "OPHELIAN_FRAMEWORK",
+                                        "value": _serve_framework(request),
+                                    },
+                                    {
+                                        "name": "OPHELIAN_MODEL_URI",
+                                        "value": _serve_model_uri(request),
+                                    },
                                     {"name": "AWS_DEFAULT_REGION", "value": cfg.region},
                                 ],
                                 "command": ["sh", "-c"],
@@ -774,9 +774,7 @@ class EKSDriver:
 
         # Batch path — Data/Train/Tune/Eval.
         manifest = self._job_manifest(request)
-        self._batch_api.create_namespaced_job(
-            namespace=self._config.eks_namespace, body=manifest
-        )
+        self._batch_api.create_namespaced_job(namespace=self._config.eks_namespace, body=manifest)
         self._submitted.append(("Job", manifest["metadata"]["name"]))
 
         # Wait for the corresponding result file in the store. Same contract
@@ -1040,23 +1038,23 @@ def _user_data_script(config: AWSConfig, request: StepRequest) -> str:
         # single file inside it (sklearn/xgboost: ``model.pkl``) or at
         # the directory itself (huggingface, pytorch checkpoints).
         deploy_serve = (
-            "export OPHELIAN_FRAMEWORK=$(python3 -c \"import json;"
+            'export OPHELIAN_FRAMEWORK=$(python3 -c "import json;'
             "d=json.load(open('/work/result.json'));"
             "print(d['info']['framework'])\")\n"
-            "MODEL_URI=$(python3 -c \"import json;"
+            'MODEL_URI=$(python3 -c "import json;'
             "d=json.load(open('/work/result.json'));"
             "print(d['artifacts']['model'])\")\n"
             "mkdir -p /work/model\n"
             "if echo \"$MODEL_URI\" | grep -q '^s3://'; then\n"
-            "  aws s3 sync \"$MODEL_URI\" /work/model/ --no-progress\n"
+            '  aws s3 sync "$MODEL_URI" /work/model/ --no-progress\n'
             "  NFILES=$(find /work/model -type f | wc -l)\n"
-            "  if [ \"$NFILES\" -eq 1 ]; then\n"
+            '  if [ "$NFILES" -eq 1 ]; then\n'
             "    export OPHELIAN_MODEL_PATH=$(find /work/model -type f | head -n1)\n"
             "  else\n"
             "    export OPHELIAN_MODEL_PATH=/work/model\n"
             "  fi\n"
             "else\n"
-            "  export OPHELIAN_MODEL_PATH=\"$MODEL_URI\"\n"
+            '  export OPHELIAN_MODEL_PATH="$MODEL_URI"\n'
             "fi\n"
             f"exec python3 -m uvicorn --factory --host 0.0.0.0 --port {port} "
             "ophelian.runtime.fastapi_runtime:app_from_env\n"
@@ -1182,10 +1180,26 @@ def _build_kubernetes_client(api: str) -> Any:
 _AL2023_X86_SSM = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
 _AL2023_ARM_SSM = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64"
 _ARM_INSTANCE_PREFIXES = (
-    "a1.", "t4g.", "m6g.", "m7g.", "m6gd.", "m7gd.",
-    "c6g.", "c7g.", "c6gd.", "c7gd.", "c6gn.", "c7gn.",
-    "r6g.", "r7g.", "r6gd.", "r7gd.",
-    "x2gd.", "im4gn.", "is4gen.", "g5g.",
+    "a1.",
+    "t4g.",
+    "m6g.",
+    "m7g.",
+    "m6gd.",
+    "m7gd.",
+    "c6g.",
+    "c7g.",
+    "c6gd.",
+    "c7gd.",
+    "c6gn.",
+    "c7gn.",
+    "r6g.",
+    "r7g.",
+    "r6gd.",
+    "r7gd.",
+    "x2gd.",
+    "im4gn.",
+    "is4gen.",
+    "g5g.",
 )
 
 

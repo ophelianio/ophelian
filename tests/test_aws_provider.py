@@ -116,9 +116,7 @@ def test_aws_config_eks_rejects_spot() -> None:
 
 
 def test_aws_config_iam_role_aliases_instance_profile() -> None:
-    cfg = AWSConfig(
-        region="us-east-1", artifact_bucket="b", instance_profile="my-role"
-    )
+    cfg = AWSConfig(region="us-east-1", artifact_bucket="b", instance_profile="my-role")
     assert cfg.iam_role == "my-role"
 
 
@@ -152,9 +150,7 @@ def test_aws_factory_auto_provisions_default_bucket(aws_env: None) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_provider_binds_run_id_at_execute_entry(
-    aws_env: None, store: S3ArtifactStore
-) -> None:
+def test_provider_binds_run_id_at_execute_entry(aws_env: None, store: S3ArtifactStore) -> None:
     """``provider.execute()`` must bind ``run_id`` so JSON logs emitted
     by the provider itself (not just the in-subprocess step_runner)
     carry the correlation key."""
@@ -171,11 +167,7 @@ def test_provider_binds_run_id_at_execute_entry(
             store=store,
         )
         _make_pipeline().run(env=provider)
-        lines = [
-            json.loads(line)
-            for line in captured.getvalue().splitlines()
-            if line.strip()
-        ]
+        lines = [json.loads(line) for line in captured.getvalue().splitlines() if line.strip()]
         # The "Starting AWS run …" entry is emitted from inside execute().
         starting = [r for r in lines if "Starting AWS run" in r["msg"]]
         assert starting, "expected a 'Starting AWS run' record"
@@ -184,9 +176,7 @@ def test_provider_binds_run_id_at_execute_entry(
         configure_logging(json=False)
 
 
-def test_provider_runs_pipeline_with_local_driver(
-    aws_env: None, store: S3ArtifactStore
-) -> None:
+def test_provider_runs_pipeline_with_local_driver(aws_env: None, store: S3ArtifactStore) -> None:
     driver = LocalDriver()
     provider = AWSProvider(
         config=AWSConfig(region="us-east-1", artifact_bucket=store.bucket),
@@ -208,9 +198,7 @@ def test_provider_runs_pipeline_with_local_driver(
     assert provider.run_id.startswith("run-")
 
 
-def test_provider_persists_artifacts_to_s3(
-    aws_env: None, store: S3ArtifactStore
-) -> None:
+def test_provider_persists_artifacts_to_s3(aws_env: None, store: S3ArtifactStore) -> None:
     provider = AWSProvider(
         config=AWSConfig(region="us-east-1", artifact_bucket=store.bucket),
         driver=LocalDriver(),
@@ -248,9 +236,7 @@ def test_provider_failure_short_circuits_remaining_steps(
 # ---------------------------------------------------------------------------
 
 
-def test_spot_interruption_writes_checkpoint(
-    aws_env: None, store: S3ArtifactStore
-) -> None:
+def test_spot_interruption_writes_checkpoint(aws_env: None, store: S3ArtifactStore) -> None:
     monitor = SpotInterruptionMonitor()
     monitor.force_trigger()
     driver = LocalDriver(spot_monitor=monitor)
@@ -281,9 +267,7 @@ def test_spot_interruption_writes_checkpoint(
     assert checkpoint.in_flight_step in {"ds", "trainer", "ev"}
 
 
-def test_spot_resume_skips_completed_steps(
-    aws_env: None, store: S3ArtifactStore
-) -> None:
+def test_spot_resume_skips_completed_steps(aws_env: None, store: S3ArtifactStore) -> None:
     # First run: spot dies after the data step completes (monitor triggers
     # *after* ds executes but before trainer finishes).
     class _Monitor:
@@ -421,9 +405,7 @@ def test_ec2_driver_provisions_and_terminates_an_instance(
     assert state in {"terminated", "shutting-down"}
 
 
-def test_ec2_driver_marks_spot_instance(
-    aws_env: None, store: S3ArtifactStore
-) -> None:
+def test_ec2_driver_marks_spot_instance(aws_env: None, store: S3ArtifactStore) -> None:
     ec2 = boto3.client("ec2", region_name="us-east-1")
     ami = _seed_amazon_linux_ami(ec2)
     config = AWSConfig(
@@ -451,18 +433,14 @@ def test_ec2_driver_marks_spot_instance(
     )
     store.put_bytes(
         result_json_key("run-spot", "trainer"),
-        json.dumps(
-            {"name": "trainer", "kind": "train", "status": "success"}
-        ).encode("utf-8"),
+        json.dumps({"name": "trainer", "kind": "train", "status": "success"}).encode("utf-8"),
     )
     outcome = driver.execute(request, store)
     assert outcome.spot is True
     assert outcome.instance_type == "g4dn.xlarge"
 
 
-def test_ec2_driver_terminates_on_failure(
-    aws_env: None, store: S3ArtifactStore
-) -> None:
+def test_ec2_driver_terminates_on_failure(aws_env: None, store: S3ArtifactStore) -> None:
     ec2 = boto3.client("ec2", region_name="us-east-1")
     ami = _seed_amazon_linux_ami(ec2)
     config = AWSConfig(
@@ -495,17 +473,13 @@ def test_ec2_driver_terminates_on_failure(
     description = ec2.describe_instances(
         Filters=[{"Name": "tag:ophelian/run-id", "Values": ["run-fail"]}]
     )
-    instances = [
-        i for r in description.get("Reservations", []) for i in r["Instances"]
-    ]
+    instances = [i for r in description.get("Reservations", []) for i in r["Instances"]]
     assert instances, "Expected a worker instance to have been provisioned"
     for inst in instances:
         assert inst["State"]["Name"] in {"terminated", "shutting-down"}
 
 
-def test_ec2_driver_propagates_spot_interruption(
-    aws_env: None, store: S3ArtifactStore
-) -> None:
+def test_ec2_driver_propagates_spot_interruption(aws_env: None, store: S3ArtifactStore) -> None:
     ec2 = boto3.client("ec2", region_name="us-east-1")
     ami = _seed_amazon_linux_ami(ec2)
     monitor = SpotInterruptionMonitor()
@@ -519,9 +493,7 @@ def test_ec2_driver_propagates_spot_interruption(
         poll_interval_seconds=0.01,
         timeout_seconds=10,
     )
-    driver = EC2Driver(
-        config, ec2_client=ec2, spot_monitor=monitor, sleep=lambda _s: None
-    )
+    driver = EC2Driver(config, ec2_client=ec2, spot_monitor=monitor, sleep=lambda _s: None)
     request = StepRequest(
         run_id="run-int",
         pipeline_name="p",
@@ -557,15 +529,11 @@ def _make_eks_driver(store: S3ArtifactStore) -> tuple[EKSDriver, MagicMock, Magi
     batch = MagicMock()
     apps = MagicMock()
     core = MagicMock()
-    driver = EKSDriver(
-        config, batch_api=batch, apps_api=apps, core_api=core, sleep=lambda _s: None
-    )
+    driver = EKSDriver(config, batch_api=batch, apps_api=apps, core_api=core, sleep=lambda _s: None)
     return driver, batch, apps, core
 
 
-def test_eks_driver_submits_job_for_train(
-    aws_env: None, store: S3ArtifactStore
-) -> None:
+def test_eks_driver_submits_job_for_train(aws_env: None, store: S3ArtifactStore) -> None:
     driver, batch, _apps, _core = _make_eks_driver(store)
     request = StepRequest(
         run_id="run-eks",
@@ -605,9 +573,7 @@ def test_eks_driver_submits_job_for_train(
     assert "python -m ophelian.runtime.step_runner /work/step.json" in bootstrap
 
 
-def test_eks_driver_submits_deployment_for_deploy(
-    aws_env: None, store: S3ArtifactStore
-) -> None:
+def test_eks_driver_submits_deployment_for_deploy(aws_env: None, store: S3ArtifactStore) -> None:
     driver, _batch, apps, core = _make_eks_driver(store)
     request = StepRequest(
         run_id="run-eks",
@@ -640,9 +606,7 @@ def test_eks_driver_submits_deployment_for_deploy(
     assert "--port 8080" in bootstrap
 
 
-def test_eks_driver_teardown_deletes_resources(
-    aws_env: None, store: S3ArtifactStore
-) -> None:
+def test_eks_driver_teardown_deletes_resources(aws_env: None, store: S3ArtifactStore) -> None:
     driver, batch, _apps, _core = _make_eks_driver(store)
     store.put_bytes(
         result_json_key("run-eks", "trainer"),
@@ -1016,8 +980,12 @@ def test_aws_provider_pipeline_keeps_deploy_instance_alive_e2e(
 
     # Mimic the worker by pre-publishing the result.json each step would
     # upload from /work — the EC2 driver only polls S3 for these.
-    def publish(step: str, kind: str, info: dict[str, Any] | None = None,
-                artifacts: dict[str, str] | None = None) -> None:
+    def publish(
+        step: str,
+        kind: str,
+        info: dict[str, Any] | None = None,
+        artifacts: dict[str, str] | None = None,
+    ) -> None:
         store.put_bytes(
             result_json_key(run_id, step),
             json.dumps(
@@ -1048,10 +1016,13 @@ def test_aws_provider_pipeline_keeps_deploy_instance_alive_e2e(
 
     pipeline = Pipeline(
         [
-            Data(name="ds", source="memory://", format="inline",
-                 options={"X": _X, "y": _Y}),
-            Train(name="trainer", framework="sklearn",
-                  model="sklearn.linear_model.LogisticRegression", data="ds"),
+            Data(name="ds", source="memory://", format="inline", options={"X": _X, "y": _Y}),
+            Train(
+                name="trainer",
+                framework="sklearn",
+                model="sklearn.linear_model.LogisticRegression",
+                data="ds",
+            ),
             Eval(name="ev", model="trainer", data="ds", metrics=("accuracy",)),
             Deploy(name="serve", model="trainer", port=8080, replicas=1),
         ],
@@ -1172,8 +1143,12 @@ def test_step_runner_uploads_artifacts_to_s3_when_bucket_set(
     payload = _run_step(
         tmp_path / "ds",
         kind="data",
-        node={"name": "ds", "source": "memory://toy", "format": "inline",
-              "options": {"X": _X, "y": _Y}},
+        node={
+            "name": "ds",
+            "source": "memory://toy",
+            "format": "inline",
+            "options": {"X": _X, "y": _Y},
+        },
     )
     dataset_uri = payload["artifacts"]["dataset"]
     assert dataset_uri.startswith(f"s3://{store.bucket}/runs/run-upload/ds/artifacts/dataset"), (
@@ -1181,9 +1156,7 @@ def test_step_runner_uploads_artifacts_to_s3_when_bucket_set(
     )
 
     s3 = boto3.client("s3", region_name="us-east-1")
-    listing = s3.list_objects_v2(
-        Bucket=store.bucket, Prefix="runs/run-upload/ds/artifacts/dataset"
-    )
+    listing = s3.list_objects_v2(Bucket=store.bucket, Prefix="runs/run-upload/ds/artifacts/dataset")
     keys = [obj["Key"] for obj in listing.get("Contents", [])]
     assert keys, "step_runner should have uploaded the dataset directory to S3"
 
@@ -1205,8 +1178,12 @@ def test_step_runner_materialises_upstream_s3_artifacts(
     ds_payload = _run_step(
         tmp_path / "ds",
         kind="data",
-        node={"name": "ds", "source": "memory://toy", "format": "inline",
-              "options": {"X": _X, "y": _Y}},
+        node={
+            "name": "ds",
+            "source": "memory://toy",
+            "format": "inline",
+            "options": {"X": _X, "y": _Y},
+        },
     )
     upstream_dataset = ds_payload["artifacts"]["dataset"]
     assert upstream_dataset.startswith("s3://"), upstream_dataset
@@ -1245,8 +1222,12 @@ def test_step_runner_no_op_when_bucket_env_absent(
     payload = _run_step(
         tmp_path / "ds",
         kind="data",
-        node={"name": "ds", "source": "memory://toy", "format": "inline",
-              "options": {"X": _X, "y": _Y}},
+        node={
+            "name": "ds",
+            "source": "memory://toy",
+            "format": "inline",
+            "options": {"X": _X, "y": _Y},
+        },
     )
     assert not payload["artifacts"]["dataset"].startswith("s3://")
 
@@ -1305,7 +1286,8 @@ def test_ec2_driver_auto_creates_deploy_security_group(
     assert sg, "deploy SG should have been auto-created"
     perms = sg[0]["IpPermissions"]
     assert any(
-        p.get("FromPort") == 9999 and p.get("ToPort") == 9999
+        p.get("FromPort") == 9999
+        and p.get("ToPort") == 9999
         and any(r.get("CidrIp") == "0.0.0.0/0" for r in p.get("IpRanges", []))
         for p in perms
     ), perms
@@ -1333,8 +1315,14 @@ def test_ec2_driver_skips_sg_provisioning_for_non_deploy_steps(
     store.put_bytes(
         result_json_key("run-nosg", "ds"),
         json.dumps(
-            {"name": "ds", "kind": "data", "status": "success", "metrics": {},
-             "artifacts": {"dataset": "s3://x/ds"}, "info": {}}
+            {
+                "name": "ds",
+                "kind": "data",
+                "status": "success",
+                "metrics": {},
+                "artifacts": {"dataset": "s3://x/ds"},
+                "info": {},
+            }
         ).encode("utf-8"),
     )
     request = StepRequest(
@@ -1342,8 +1330,7 @@ def test_ec2_driver_skips_sg_provisioning_for_non_deploy_steps(
         pipeline_name="p",
         step_name="ds",
         kind="data",
-        node=Data(name="ds", source="memory://", format="inline",
-                  options={"X": _X, "y": _Y}),
+        node=Data(name="ds", source="memory://", format="inline", options={"X": _X, "y": _Y}),
     )
     driver.execute(request, store)
     sgs = ec2.describe_security_groups(
@@ -1358,18 +1345,13 @@ def test_ec2_driver_skips_sg_provisioning_for_non_deploy_steps(
 
 
 def test_train_checkpoint_key_is_stable() -> None:
-    assert (
-        train_checkpoint_key("run-xyz", "trainer")
-        == "runs/run-xyz/checkpoints/trainer"
-    )
+    assert train_checkpoint_key("run-xyz", "trainer") == "runs/run-xyz/checkpoints/trainer"
 
 
 def test_provider_train_checkpoint_uri_includes_prefix(aws_env: None) -> None:
     """The URI passed back to the worker on retry must respect the
     user-pinned ``artifact_prefix`` so we don't write outside it."""
-    store = S3ArtifactStore(
-        bucket="ophelian-aws-test", prefix="team-a", region="us-east-1"
-    )
+    store = S3ArtifactStore(bucket="ophelian-aws-test", prefix="team-a", region="us-east-1")
     provider = AWSProvider(
         config=AWSConfig(
             region="us-east-1",
@@ -1444,9 +1426,7 @@ def test_step_runner_uploads_checkpoint_on_sigterm(
     objs = boto3.client("s3", region_name="us-east-1").list_objects_v2(
         Bucket=bucket, Prefix="team/runs/run-9/checkpoints/trainer/"
     )
-    assert any(
-        o["Key"].endswith("epoch-3.pt") for o in objs.get("Contents", [])
-    )
+    assert any(o["Key"].endswith("epoch-3.pt") for o in objs.get("Contents", []))
 
 
 def test_step_runner_resumes_train_from_local_uri(
@@ -1489,18 +1469,15 @@ def test_step_runner_resumes_train_from_local_uri(
         # _handle_train can run without falling over upstream lookups.
         from ophelian.core.nodes import StepResult
 
-        return StepResult(name=node.name, kind="train", status="success",
-                           metrics={}, artifacts={}, info={})
+        return StepResult(
+            name=node.name, kind="train", status="success", metrics={}, artifacts={}, info={}
+        )
 
-    monkeypatch.setattr(
-        _standalone.StandaloneProvider, "_handle_train", _spy
-    )
+    monkeypatch.setattr(_standalone.StandaloneProvider, "_handle_train", _spy)
     try:
         rc = step_runner.run(spec_path)
     finally:
-        monkeypatch.setattr(
-            _standalone.StandaloneProvider, "_handle_train", real_handle_train
-        )
+        monkeypatch.setattr(_standalone.StandaloneProvider, "_handle_train", real_handle_train)
     assert rc == 0
     assert captured["resume_from"] is not None
     assert Path(captured["resume_from"]).name == "snapshot"
@@ -1539,7 +1516,8 @@ def test_ec2_user_data_for_deploy_downloads_model_from_s3() -> None:
 
 
 def test_eks_deploy_manifest_threads_framework_and_model_uri_from_upstream(
-    aws_env: None, store: S3ArtifactStore,
+    aws_env: None,
+    store: S3ArtifactStore,
 ) -> None:
     """Round-6 regression: ``_serve_framework`` previously inspected
     ``upstream_artifacts`` (which only carries opaque URIs) so it

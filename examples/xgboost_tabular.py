@@ -18,12 +18,8 @@ import os
 
 from ophelian import Auto, Data, Deploy, Eval, Pipeline, Train
 
-DATASET = os.environ.get(
-    "OPHELIAN_DATASET", "s3://ophelian-demo/tabular/train.parquet"
-)
-EVAL_DATASET = os.environ.get(
-    "OPHELIAN_EVAL_DATASET", "s3://ophelian-demo/tabular/eval.parquet"
-)
+DATASET = os.environ.get("OPHELIAN_DATASET", "s3://ophelian-demo/tabular/train.parquet")
+EVAL_DATASET = os.environ.get("OPHELIAN_EVAL_DATASET", "s3://ophelian-demo/tabular/eval.parquet")
 TARGET = os.environ.get("OPHELIAN_TARGET", "label")
 
 

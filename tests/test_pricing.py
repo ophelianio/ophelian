@@ -85,9 +85,7 @@ def test_price_quote_annual_cost() -> None:
 def test_explain_includes_runners_up() -> None:
     quote = lookup_cheapest("A100", spot=True)
     assert quote is not None
-    decision = RouterDecision(
-        quote=quote, considered=static_quotes("A100", spot=True)
-    )
+    decision = RouterDecision(quote=quote, considered=static_quotes("A100", spot=True))
     text = explain(decision)
     assert "Cheapest A100" in text
     assert "Runners-up" in text or len(decision.considered) <= 1
@@ -96,9 +94,7 @@ def test_explain_includes_runners_up() -> None:
 def test_router_decision_savings_vs_most_expensive_is_non_negative() -> None:
     quote = lookup_cheapest("A100", spot=True)
     assert quote is not None
-    decision = RouterDecision(
-        quote=quote, considered=static_quotes("A100")
-    )
+    decision = RouterDecision(quote=quote, considered=static_quotes("A100"))
     assert decision.savings_vs_most_expensive >= 0.0
 
 
@@ -132,24 +128,25 @@ def _disable_live_http(monkeypatch: pytest.MonkeyPatch) -> None:
     from ophelian import pricing as _pricing
 
     monkeypatch.setattr(_pricing, "_fetch_aws_spot_quotes", lambda *a, **k: [])
-    monkeypatch.setattr(
-        _pricing, "_fetch_azure_retail_quotes", lambda *a, **k: []
-    )
-    monkeypatch.setattr(
-        _pricing, "_fetch_gcp_billing_quotes", lambda *a, **k: []
-    )
+    monkeypatch.setattr(_pricing, "_fetch_azure_retail_quotes", lambda *a, **k: [])
+    monkeypatch.setattr(_pricing, "_fetch_gcp_billing_quotes", lambda *a, **k: [])
 
 
-def test_fetch_live_ignores_stale_cache(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_fetch_live_ignores_stale_cache(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     _disable_live_http(monkeypatch)
     monkeypatch.setenv("OPHELIAN_PRICING_CACHE_DIR", str(tmp_path / "cache.json"))
     payload = {
         "_fetched_at": 0.0,  # 1970 — definitely older than 24h
-        "quotes": [{"provider": "aws", "region": "us-east-1",
-                    "instance": "x", "gpu_family": "A100", "gpu_count": 1,
-                    "hourly_usd": 0.01}],
+        "quotes": [
+            {
+                "provider": "aws",
+                "region": "us-east-1",
+                "instance": "x",
+                "gpu_family": "A100",
+                "gpu_count": 1,
+                "hourly_usd": 0.01,
+            }
+        ],
     }
     (tmp_path / "cache.json").write_text(json.dumps(payload))
     assert fetch_live("A100") == []
@@ -167,9 +164,7 @@ def test_fetch_live_aws_spot_uses_describe_spot_price_history(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Live path should hit ec2.describe_spot_price_history when cache is stale."""
-    monkeypatch.setenv(
-        "OPHELIAN_PRICING_CACHE_DIR", str(tmp_path / "cache.json")
-    )
+    monkeypatch.setenv("OPHELIAN_PRICING_CACHE_DIR", str(tmp_path / "cache.json"))
 
     calls: list[dict[str, object]] = []
 
@@ -197,6 +192,7 @@ def test_fetch_live_aws_spot_uses_describe_spot_price_history(
         return _FakeEC2()
 
     import boto3
+
     monkeypatch.setattr(boto3, "client", _fake_client)
 
     quotes = fetch_live("A100", providers=["aws"], regions=["us-east-1"])
@@ -256,12 +252,11 @@ def test_fetch_live_azure_retail_api_picks_spot_meter(
 ) -> None:
     """The Azure live path should hit the Retail Prices API and tag
     Spot meters as ``spot=True`` while skipping Windows variants."""
-    monkeypatch.setenv(
-        "OPHELIAN_PRICING_CACHE_DIR", str(tmp_path / "cache.json")
-    )
+    monkeypatch.setenv("OPHELIAN_PRICING_CACHE_DIR", str(tmp_path / "cache.json"))
     # AWS + GCP are out of scope for this assertion; mute them so the
     # cache write only contains Azure quotes.
     from ophelian import pricing as _pricing
+
     monkeypatch.setattr(_pricing, "_fetch_aws_spot_quotes", lambda *a, **k: [])
     monkeypatch.setattr(_pricing, "_fetch_gcp_billing_quotes", lambda *a, **k: [])
 
@@ -317,12 +312,11 @@ def test_fetch_live_gcp_skipped_without_api_key(
 ) -> None:
     """GCP live pricing should be a graceful no-op when
     ``GOOGLE_API_KEY`` (or ``GOOGLE_CLOUD_API_KEY``) is unset."""
-    monkeypatch.setenv(
-        "OPHELIAN_PRICING_CACHE_DIR", str(tmp_path / "cache.json")
-    )
+    monkeypatch.setenv("OPHELIAN_PRICING_CACHE_DIR", str(tmp_path / "cache.json"))
     monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
     monkeypatch.delenv("GOOGLE_CLOUD_API_KEY", raising=False)
     from ophelian import pricing as _pricing
+
     monkeypatch.setattr(_pricing, "_fetch_aws_spot_quotes", lambda *a, **k: [])
     monkeypatch.setattr(_pricing, "_fetch_azure_retail_quotes", lambda *a, **k: [])
 
@@ -336,11 +330,10 @@ def test_fetch_live_gcp_billing_catalog_overlays_live_gpu_rate(
     """With ``GOOGLE_API_KEY`` set the GCP path should query the Cloud
     Billing Catalog API and produce ``hourly_usd = live_gpu_rate x
     gpu_count + static_compute_base`` for every known instance."""
-    monkeypatch.setenv(
-        "OPHELIAN_PRICING_CACHE_DIR", str(tmp_path / "cache.json")
-    )
+    monkeypatch.setenv("OPHELIAN_PRICING_CACHE_DIR", str(tmp_path / "cache.json"))
     monkeypatch.setenv("GOOGLE_API_KEY", "fake-test-key-do-not-use")
     from ophelian import pricing as _pricing
+
     monkeypatch.setattr(_pricing, "_fetch_aws_spot_quotes", lambda *a, **k: [])
     monkeypatch.setattr(_pricing, "_fetch_azure_retail_quotes", lambda *a, **k: [])
 
@@ -407,16 +400,18 @@ def test_fetch_live_gcp_billing_catalog_overlays_live_gpu_rate(
 def test_lookup_cheapest_prefers_live_over_static_when_cheaper(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setenv(
-        "OPHELIAN_PRICING_CACHE_DIR", str(tmp_path / "cache.json")
-    )
+    monkeypatch.setenv("OPHELIAN_PRICING_CACHE_DIR", str(tmp_path / "cache.json"))
     fresh_cache = {
         "_fetched_at": time.time(),
         "quotes": [
             {
-                "provider": "aws", "region": "us-east-1",
-                "instance": "p4d.24xlarge", "gpu_family": "A100",
-                "gpu_count": 8, "hourly_usd": 0.50, "spot": True,
+                "provider": "aws",
+                "region": "us-east-1",
+                "instance": "p4d.24xlarge",
+                "gpu_family": "A100",
+                "gpu_count": 8,
+                "hourly_usd": 0.50,
+                "spot": True,
                 "source": "aws-spot-history",
             }
         ],

@@ -69,18 +69,22 @@ def test_gcp_config_validates_machine_type() -> None:
 def test_gcp_config_rejects_non_nvidia_gpu() -> None:
     with pytest.raises(ValueError, match="gpu_type"):
         GCPConfig(
-            project="p", region="us-central1",
+            project="p",
+            region="us-central1",
             machine_type="n1-standard-4",
-            gpu_type="amd-mi300", gpu_count=1,
+            gpu_type="amd-mi300",
+            gpu_count=1,
         )
 
 
 def test_gcp_config_requires_gpu_type_when_count_set() -> None:
     with pytest.raises(ValueError, match="gpu_count"):
         GCPConfig(
-            project="p", region="us-central1",
+            project="p",
+            region="us-central1",
             machine_type="n1-standard-4",
-            gpu_type=None, gpu_count=1,
+            gpu_type=None,
+            gpu_count=1,
         )
 
 
@@ -104,8 +108,10 @@ def test_gcp_config_gke_requires_cluster() -> None:
 def test_gcp_config_gke_rejects_spot() -> None:
     with pytest.raises(ValueError, match="Preemptible"):
         GCPConfig(
-            project="p", region="us-central1",
-            gcp_backend="gke", gke_cluster="ml",
+            project="p",
+            region="us-central1",
+            gcp_backend="gke",
+            gke_cluster="ml",
             spot=True,
         )
 

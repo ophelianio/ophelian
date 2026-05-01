@@ -23,17 +23,35 @@ use is genuinely appreciated.
 
 ## Dev setup
 
+Ophelian uses [uv](https://docs.astral.sh/uv/) for environment and
+lockfile management. The pre-commit hooks run `uv run ruff` /
+`uv run mypy` directly so they always match the versions pinned in
+`uv.lock` (no drift between your local hooks and CI).
+
+Install uv (one of the following), then sync the dev environment:
+
 ```bash
-python -m pip install -e '.[dev,sklearn,xgboost]'
-pre-commit install
+# pick one
+curl -LsSf https://astral.sh/uv/install.sh | sh
+brew install uv
+pipx install uv
+
+# from the repo root
+uv sync --frozen --extra dev --extra sklearn --extra xgboost
+uv run pre-commit install
 ```
 
 Optional cloud extras (only needed when working on the matching
 provider):
 
 ```bash
-pip install -e '.[aws,gcp,azure]'
+uv sync --frozen --extra dev --extra all   # aws + gcp + azure + sklearn + xgboost
 ```
+
+If you really cannot use uv, you can still install with pip
+(`python -m pip install -e '.[dev,sklearn,xgboost]'`), but you must
+either install uv anyway for the pre-commit hooks, or run
+`ruff check`, `ruff format` and `mypy` manually before pushing.
 
 ## Running the suite
 

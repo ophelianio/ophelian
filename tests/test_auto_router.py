@@ -27,9 +27,7 @@ _CRED_VARS = (
 
 
 @pytest.fixture(autouse=True)
-def _isolate_credentials(
-    monkeypatch: pytest.MonkeyPatch, tmp_path
-) -> None:
+def _isolate_credentials(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
     """Pretend the test runner has *no* cloud credentials configured."""
     for var in _CRED_VARS:
         monkeypatch.delenv(var, raising=False)
@@ -46,8 +44,13 @@ def test_supported_providers_are_three() -> None:
 
 def test_gcp_instance_split_handles_plus_form() -> None:
     quote = PriceQuote(
-        provider="gcp", region="us-central1", instance="n1-standard-4+t4",
-        gpu_family="T4", gpu_count=1, hourly_usd=0.13, spot=True,
+        provider="gcp",
+        region="us-central1",
+        instance="n1-standard-4+t4",
+        gpu_family="T4",
+        gpu_count=1,
+        hourly_usd=0.13,
+        spot=True,
     )
     machine, gpu = _gcp_instance_for(quote)
     assert machine == "n1-standard-4"
@@ -61,8 +64,13 @@ def test_gcp_instance_split_handles_a100() -> None:
     ``GCPConfig`` reject the construction because ``gpu_count > 0``
     requires a ``gpu_type``.)"""
     quote = PriceQuote(
-        provider="gcp", region="us-central1", instance="a2-highgpu-1g",
-        gpu_family="A100", gpu_count=1, hourly_usd=1.4, spot=True,
+        provider="gcp",
+        region="us-central1",
+        instance="a2-highgpu-1g",
+        gpu_family="A100",
+        gpu_count=1,
+        hourly_usd=1.4,
+        spot=True,
     )
     machine, gpu = _gcp_instance_for(quote)
     assert machine == "a2-highgpu-1g"
@@ -72,15 +80,25 @@ def test_gcp_instance_split_handles_a100() -> None:
 def test_gcp_instance_split_handles_h100_and_l4() -> None:
     """``a3-*`` implies H100 and ``g2-*`` implies L4."""
     h100 = PriceQuote(
-        provider="gcp", region="us-central1", instance="a3-highgpu-8g",
-        gpu_family="H100", gpu_count=8, hourly_usd=30.0, spot=True,
+        provider="gcp",
+        region="us-central1",
+        instance="a3-highgpu-8g",
+        gpu_family="H100",
+        gpu_count=8,
+        hourly_usd=30.0,
+        spot=True,
     )
     machine, gpu = _gcp_instance_for(h100)
     assert (machine, gpu) == ("a3-highgpu-8g", "nvidia-h100-80gb")
 
     l4 = PriceQuote(
-        provider="gcp", region="us-central1", instance="g2-standard-4",
-        gpu_family="L4", gpu_count=1, hourly_usd=0.28, spot=True,
+        provider="gcp",
+        region="us-central1",
+        instance="g2-standard-4",
+        gpu_family="L4",
+        gpu_count=1,
+        hourly_usd=0.28,
+        spot=True,
     )
     machine, gpu = _gcp_instance_for(l4)
     assert (machine, gpu) == ("g2-standard-4", "nvidia-l4")
@@ -106,9 +124,7 @@ def test_dry_run_returns_dryrun_provider_with_decision() -> None:
 
 
 def test_dry_run_describe_mentions_provider_and_price() -> None:
-    provider = Auto(
-        cheapest_gpu="A100", spot=True, dry_run=True, require_credentials=False
-    )
+    provider = Auto(cheapest_gpu="A100", spot=True, dry_run=True, require_credentials=False)
     text = provider.describe()
     assert "auto-dry-run" in text
     assert "USD/h" in text
@@ -247,9 +263,7 @@ def test_dry_run_provider_skips_every_step() -> None:
         ]
     )
     plan = GraphCompiler().compile(pipe)
-    provider = Auto(
-        cheapest_gpu="A100", spot=True, dry_run=True, require_credentials=False
-    )
+    provider = Auto(cheapest_gpu="A100", spot=True, dry_run=True, require_credentials=False)
     result = provider.execute(pipe, plan)
     assert [s.name for s in result.steps] == ["ds", "trainer"]
     assert all(s.status == "skipped" for s in result.steps)

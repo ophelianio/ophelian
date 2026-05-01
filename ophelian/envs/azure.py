@@ -200,9 +200,7 @@ class AzureConfig(BaseModel):
     @classmethod
     def _valid_subscription(cls, value: str) -> str:
         if not _SUBSCRIPTION_RE.match(value):
-            raise ValueError(
-                f"subscription_id={value!r} does not look like a valid Azure GUID"
-            )
+            raise ValueError(f"subscription_id={value!r} does not look like a valid Azure GUID")
         return value
 
     @field_validator("location")
@@ -222,8 +220,7 @@ class AzureConfig(BaseModel):
     def _valid_vm(cls, value: str) -> str:
         if not _VM_SIZE_RE.match(value):
             raise ValueError(
-                f"vm_size={value!r} is not a valid Azure VM size "
-                "(expected e.g. 'Standard_D4s_v5')."
+                f"vm_size={value!r} is not a valid Azure VM size (expected e.g. 'Standard_D4s_v5')."
             )
         return value
 
@@ -241,8 +238,7 @@ class AzureConfig(BaseModel):
     def _backend_consistency(self) -> AzureConfig:
         if self.azure_backend == "aks" and not self.aks_cluster:
             raise ValueError(
-                "azure_backend='aks' requires `aks_cluster=<name>` so the "
-                "provider can submit Jobs."
+                "azure_backend='aks' requires `aks_cluster=<name>` so the provider can submit Jobs."
             )
         if self.spot and self.azure_backend == "aks":
             raise ValueError(

@@ -285,7 +285,9 @@ def fetch_s3_object_to_tempfile(
         raise ValueError(f"s3 URI must include an object key: {uri!r}")
     if client is None:
         client = S3ArtifactStore._build_client(region)
-    cache = Path(cache_dir) if cache_dir is not None else Path(tempfile.mkdtemp(prefix="ophelian-s3-"))
+    cache = (
+        Path(cache_dir) if cache_dir is not None else Path(tempfile.mkdtemp(prefix="ophelian-s3-"))
+    )
     cache.mkdir(parents=True, exist_ok=True)
     safe_name = key.replace("/", "__") or "object"
     dst = cache / safe_name

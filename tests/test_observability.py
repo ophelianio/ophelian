@@ -71,8 +71,13 @@ def test_json_formatter_emits_required_keys() -> None:
 
 def test_json_formatter_includes_run_id_when_bound() -> None:
     record = logging.LogRecord(
-        name="ophelian.test", level=logging.INFO, pathname=__file__,
-        lineno=1, msg="x", args=(), exc_info=None,
+        name="ophelian.test",
+        level=logging.INFO,
+        pathname=__file__,
+        lineno=1,
+        msg="x",
+        args=(),
+        exc_info=None,
     )
     with bind_run("run-correlated"):
         payload = json.loads(JSONFormatter().format(record))
@@ -81,8 +86,13 @@ def test_json_formatter_includes_run_id_when_bound() -> None:
 
 def test_json_formatter_carries_extra_fields() -> None:
     record = logging.LogRecord(
-        name="ophelian.test", level=logging.INFO, pathname=__file__,
-        lineno=1, msg="x", args=(), exc_info=None,
+        name="ophelian.test",
+        level=logging.INFO,
+        pathname=__file__,
+        lineno=1,
+        msg="x",
+        args=(),
+        exc_info=None,
     )
     record.step = "trainer"
     record.duration_s = 1.25
@@ -97,8 +107,13 @@ def test_json_formatter_repr_falls_back_for_unserialisable() -> None:
             return "<thing>"
 
     record = logging.LogRecord(
-        name="ophelian.test", level=logging.INFO, pathname=__file__,
-        lineno=1, msg="x", args=(), exc_info=None,
+        name="ophelian.test",
+        level=logging.INFO,
+        pathname=__file__,
+        lineno=1,
+        msg="x",
+        args=(),
+        exc_info=None,
     )
     record.thing = _NotJsonable()
     payload = json.loads(JSONFormatter().format(record))
@@ -233,8 +248,11 @@ def test_emit_run_summary_skips_when_disabled(
     monkeypatch.setenv("OPHELIAN_NO_SUMMARY", "1")
     stream = io.StringIO()
     emit_run_summary(
-        provider="aws", run_id="r", pipeline="p",
-        steps=[_step("trainer")], stream=stream,
+        provider="aws",
+        run_id="r",
+        pipeline="p",
+        steps=[_step("trainer")],
+        stream=stream,
     )
     assert stream.getvalue() == ""
 
@@ -245,6 +263,7 @@ def test_emit_run_summary_json_includes_duration_and_cost_fields(
     """duration_seconds + cost_estimate_usd + gpu_utilization must round-trip."""
     monkeypatch.setenv("OPHELIAN_LOG_FORMAT", "json")
     from ophelian.core.nodes import StepResult
+
     captured: list[logging.LogRecord] = []
 
     class _Capture(logging.Handler):
@@ -287,6 +306,7 @@ def test_emit_run_summary_json_includes_duration_and_cost_fields(
 
 def test_emit_run_summary_human_renders_duration_and_cost_columns() -> None:
     from ophelian.core.nodes import StepResult
+
     stream = io.StringIO()
     step = StepResult(
         name="trainer",

@@ -60,7 +60,9 @@ def _detect_credentials() -> dict[str, bool]:
     )
     gcp = bool(
         os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
-        or os.path.exists(os.path.expanduser("~/.config/gcloud/application_default_credentials.json"))
+        or os.path.exists(
+            os.path.expanduser("~/.config/gcloud/application_default_credentials.json")
+        )
     )
     azure = bool(
         os.environ.get("AZURE_CLIENT_ID")
@@ -196,10 +198,7 @@ class _DryRunProvider(Provider):
 
     def describe(self) -> str:
         q = self._decision.quote
-        return (
-            f"auto-dry-run -> {q.provider}/{q.region} {q.instance} "
-            f"({q.hourly_usd:.3f} USD/h)"
-        )
+        return f"auto-dry-run -> {q.provider}/{q.region} {q.instance} ({q.hourly_usd:.3f} USD/h)"
 
     def execute(self, pipeline: Any, plan: Any) -> Any:
         from ophelian.core.nodes import PipelineResult, StepResult

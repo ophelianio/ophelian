@@ -184,7 +184,9 @@ class GCSArtifactStore:
         try:
             return bytes(blob.download_as_bytes())
         except Exception as exc:
-            raise FileNotFoundError(f"No GCS object at gs://{self._bucket_name}/{full_key}") from exc
+            raise FileNotFoundError(
+                f"No GCS object at gs://{self._bucket_name}/{full_key}"
+            ) from exc
 
     def get(self, key: str, destination: str | Path | None = None) -> Path:
         full_key = self._full_key(key)

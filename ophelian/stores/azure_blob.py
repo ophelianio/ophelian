@@ -282,9 +282,7 @@ class AzureBlobArtifactStore:
 def az_store_from_uri(uri: str, **kwargs: Any) -> AzureBlobArtifactStore:
     """Build an :class:`AzureBlobArtifactStore` rooted at ``az://account/container/prefix``."""
     account, container, prefix = parse_az_uri(uri)
-    return AzureBlobArtifactStore(
-        account=account, container=container, prefix=prefix, **kwargs
-    )
+    return AzureBlobArtifactStore(account=account, container=container, prefix=prefix, **kwargs)
 
 
 def cleanup_local_cache(store: AzureBlobArtifactStore) -> None:

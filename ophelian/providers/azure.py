@@ -150,9 +150,7 @@ class AzureProvider(Provider):
         with bind_run(self._run_id):
             return self._execute_bound(pipeline, plan)
 
-    def _execute_bound(
-        self, pipeline: Pipeline, plan: ExecutionPlan
-    ) -> PipelineResult:
+    def _execute_bound(self, pipeline: Pipeline, plan: ExecutionPlan) -> PipelineResult:
         run_id = self._run_id
         self._last_run_id = run_id
         logger.info(
@@ -211,9 +209,7 @@ class AzureProvider(Provider):
                     upstream_artifacts={
                         dep: artifact_index.get(dep, {}) for dep in step.depends_on
                     },
-                    upstream_info={
-                        dep: info_index.get(dep, {}) for dep in step.depends_on
-                    },
+                    upstream_info={dep: info_index.get(dep, {}) for dep in step.depends_on},
                     resume=step.name == resume_target,
                     resume_from=step_resume_from,
                 )
@@ -243,9 +239,7 @@ class AzureProvider(Provider):
                         name=step.name,
                         kind=step.kind,
                         status="failed",
-                        error=(
-                            f"spot-evicted: resume with Azure(... resume_run_id={run_id!r})"
-                        ),
+                        error=(f"spot-evicted: resume with Azure(... resume_run_id={run_id!r})"),
                         info={
                             "checkpoint_uri": self._last_checkpoint_uri,
                             "run_id": run_id,

@@ -61,8 +61,7 @@ class GCPCredentialError(RuntimeError):
 
 def _missing_gcp_extra(component: str) -> ImportError:
     return ImportError(
-        f"GCP {component} support requires the optional `gcp` extra: "
-        "`pip install 'ophelian[gcp]'`."
+        f"GCP {component} support requires the optional `gcp` extra: `pip install 'ophelian[gcp]'`."
     )
 
 
@@ -209,9 +208,7 @@ class GCEDriver:
         startup = _startup_script(cfg, request)
         body: dict[str, Any] = {
             "name": name,
-            "machineType": (
-                f"zones/{cfg.effective_zone}/machineTypes/{cfg.machine_type}"
-            ),
+            "machineType": (f"zones/{cfg.effective_zone}/machineTypes/{cfg.machine_type}"),
             "disks": [
                 {
                     "boot": True,
@@ -226,9 +223,7 @@ class GCEDriver:
             "networkInterfaces": [
                 {
                     "network": f"global/networks/{cfg.network}",
-                    "accessConfigs": [
-                        {"type": "ONE_TO_ONE_NAT", "name": "External NAT"}
-                    ],
+                    "accessConfigs": [{"type": "ONE_TO_ONE_NAT", "name": "External NAT"}],
                 }
             ],
             "metadata": {
@@ -348,7 +343,9 @@ class GCEDriver:
             if name in self._keep_alive_instances:
                 continue
             self._delete_instance(name)
-        self._tracked_instances = [n for n in self._tracked_instances if n in self._keep_alive_instances]
+        self._tracked_instances = [
+            n for n in self._tracked_instances if n in self._keep_alive_instances
+        ]
 
     def cleanup_deploys(self) -> None:
         for name in list(self._keep_alive_instances):

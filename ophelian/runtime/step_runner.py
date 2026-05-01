@@ -75,9 +75,7 @@ def _build_runtime_store(backend: str) -> Any:
 
         bucket = os.environ.get("OPHELIAN_ARTIFACT_BUCKET", "")
         project = os.environ.get("OPHELIAN_GCP_PROJECT")
-        return GCSArtifactStore(
-            bucket=bucket, prefix=prefix, project=project, ensure_bucket=False
-        )
+        return GCSArtifactStore(bucket=bucket, prefix=prefix, project=project, ensure_bucket=False)
     if backend == "azure":
         from ophelian.stores.azure_blob import AzureBlobArtifactStore
 
@@ -226,13 +224,9 @@ def _install_sigterm_checkpoint_uploader(
                 run_id=run_id,
                 step_name=step_name,
             )
-            sys.stderr.write(
-                f"[step_runner] SIGTERM ({signum}) — checkpoint uploaded to {uri}\n"
-            )
+            sys.stderr.write(f"[step_runner] SIGTERM ({signum}) — checkpoint uploaded to {uri}\n")
         except Exception as exc:  # pragma: no cover - best effort
-            sys.stderr.write(
-                f"[step_runner] SIGTERM checkpoint upload failed: {exc}\n"
-            )
+            sys.stderr.write(f"[step_runner] SIGTERM checkpoint upload failed: {exc}\n")
         sys.exit(75)
 
     signal.signal(signal.SIGTERM, _handler)
@@ -256,16 +250,12 @@ def _download_resume_checkpoint(uri: str, work_dir: Path) -> Path:
         from ophelian.stores.gcs import GCSArtifactStore, parse_gs_uri
 
         bucket, full_key = parse_gs_uri(uri)
-        return Path(
-            GCSArtifactStore(bucket=bucket, ensure_bucket=False).get(full_key, dst)
-        )
+        return Path(GCSArtifactStore(bucket=bucket, ensure_bucket=False).get(full_key, dst))
     if uri.startswith("az://"):
         from ophelian.stores.azure_blob import AzureBlobArtifactStore, parse_az_uri
 
         account, container, full_key = parse_az_uri(uri)
-        store = AzureBlobArtifactStore(
-            account=account, container=container, ensure_container=False
-        )
+        store = AzureBlobArtifactStore(account=account, container=container, ensure_container=False)
         return Path(store.get(full_key, dst))
     return Path(uri)
 
@@ -300,17 +290,13 @@ def _materialise_upstream_multicloud(
                 from ophelian.stores.s3 import S3ArtifactStore, parse_s3_uri
 
                 bucket, full_key = parse_s3_uri(uri)
-                local_items[key] = str(
-                    S3ArtifactStore(bucket=bucket).get(full_key, local_dst)
-                )
+                local_items[key] = str(S3ArtifactStore(bucket=bucket).get(full_key, local_dst))
             elif uri.startswith("gs://"):
                 from ophelian.stores.gcs import GCSArtifactStore, parse_gs_uri
 
                 bucket, full_key = parse_gs_uri(uri)
                 local_items[key] = str(
-                    GCSArtifactStore(bucket=bucket, ensure_bucket=False).get(
-                        full_key, local_dst
-                    )
+                    GCSArtifactStore(bucket=bucket, ensure_bucket=False).get(full_key, local_dst)
                 )
             elif uri.startswith("az://"):
                 from ophelian.stores.azure_blob import (
@@ -394,13 +380,9 @@ def _install_sigterm_checkpoint_uploader_multicloud(
                 run_id=run_id,
                 step_name=step_name,
             )
-            sys.stderr.write(
-                f"[step_runner] SIGTERM ({signum}) — checkpoint uploaded to {uri}\n"
-            )
+            sys.stderr.write(f"[step_runner] SIGTERM ({signum}) — checkpoint uploaded to {uri}\n")
         except Exception as exc:  # pragma: no cover - best effort
-            sys.stderr.write(
-                f"[step_runner] SIGTERM checkpoint upload failed: {exc}\n"
-            )
+            sys.stderr.write(f"[step_runner] SIGTERM checkpoint upload failed: {exc}\n")
         sys.exit(75)
 
     signal.signal(signal.SIGTERM, _handler)
@@ -410,9 +392,7 @@ def run(spec_path: Path) -> int:
     spec = json.loads(spec_path.read_text())
     kind = spec["kind"]
     node_payload = spec["node"]
-    artifacts: dict[str, dict[str, str]] = spec.get(
-        "artifacts", spec.get("upstream_artifacts", {})
-    )
+    artifacts: dict[str, dict[str, str]] = spec.get("artifacts", spec.get("upstream_artifacts", {}))
     work_dir = spec_path.parent
 
     node_cls = _NODE_TYPES[kind]
@@ -487,9 +467,7 @@ def run(spec_path: Path) -> int:
     out_artifacts = dict(result.artifacts)
     if backend and run_id:
         store = _build_runtime_store(backend)
-        out_artifacts = _persist_artifacts_to_store(
-            out_artifacts, run_id, result.name, store
-        )
+        out_artifacts = _persist_artifacts_to_store(out_artifacts, run_id, result.name, store)
 
     payload = {
         "name": result.name,

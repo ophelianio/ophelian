@@ -54,9 +54,7 @@ def test_put_and_get_file(store: AzureBlobArtifactStore, tmp_path: Path) -> None
     assert fetched.read_bytes() == b"weights"
 
 
-def test_put_directory_uploads_every_file(
-    store: AzureBlobArtifactStore, tmp_path: Path
-) -> None:
+def test_put_directory_uploads_every_file(store: AzureBlobArtifactStore, tmp_path: Path) -> None:
     src = tmp_path / "model"
     (src / "inner").mkdir(parents=True)
     (src / "inner" / "weights.bin").write_bytes(b"abc")

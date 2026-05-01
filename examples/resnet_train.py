@@ -18,12 +18,8 @@ import os
 
 from ophelian import Auto, Data, Eval, Pipeline, Train
 
-DATASET = os.environ.get(
-    "OPHELIAN_DATASET", "s3://ophelian-demo/imagenette/train.parquet"
-)
-EVAL_DATASET = os.environ.get(
-    "OPHELIAN_EVAL_DATASET", "s3://ophelian-demo/imagenette/val.parquet"
-)
+DATASET = os.environ.get("OPHELIAN_DATASET", "s3://ophelian-demo/imagenette/train.parquet")
+EVAL_DATASET = os.environ.get("OPHELIAN_EVAL_DATASET", "s3://ophelian-demo/imagenette/val.parquet")
 
 
 pipe = Pipeline(

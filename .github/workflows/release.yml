@@ -6,7 +6,7 @@ name: Release
 # One-time setup on PyPI:
 #   1. Create the project (or claim the existing `ophelian` name).
 #   2. Add a Trusted Publisher pointing to:
-#        - Repo:        LuisFalva/ophelia
+#        - Repo:        LuisFalva/ophelian
 #        - Workflow:    release.yml
 #        - Environment: pypi
 #   3. (Recommended) Create a GitHub environment called `pypi` with required

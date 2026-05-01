@@ -56,7 +56,8 @@ def test_azure_config_validates_subscription_id() -> None:
     with pytest.raises(ValueError, match="subscription_id"):
         AzureConfig(
             subscription_id="not-a-guid",
-            resource_group="rg", location="eastus",
+            resource_group="rg",
+            location="eastus",
         )
 
 
@@ -69,25 +70,32 @@ def test_azure_config_validates_location() -> None:
 def test_azure_config_rejects_bad_vm_size() -> None:
     with pytest.raises(ValueError, match="vm_size"):
         AzureConfig(
-            subscription_id=_SUB, resource_group="rg",
-            location="eastus", vm_size="d4s-v5-not-prefixed",
+            subscription_id=_SUB,
+            resource_group="rg",
+            location="eastus",
+            vm_size="d4s-v5-not-prefixed",
         )
 
 
 def test_azure_config_aks_requires_cluster() -> None:
     with pytest.raises(ValueError, match="aks_cluster"):
         AzureConfig(
-            subscription_id=_SUB, resource_group="rg",
-            location="eastus", azure_backend="aks",
+            subscription_id=_SUB,
+            resource_group="rg",
+            location="eastus",
+            azure_backend="aks",
         )
 
 
 def test_azure_config_aks_rejects_spot() -> None:
     with pytest.raises(ValueError, match="Spot"):
         AzureConfig(
-            subscription_id=_SUB, resource_group="rg",
-            location="eastus", azure_backend="aks",
-            aks_cluster="ml", spot=True,
+            subscription_id=_SUB,
+            resource_group="rg",
+            location="eastus",
+            azure_backend="aks",
+            aks_cluster="ml",
+            spot=True,
         )
 
 
@@ -100,8 +108,10 @@ def test_azure_config_with_resume_returns_copy() -> None:
 
 def test_azure_config_detects_gpu_vm_family() -> None:
     cfg = AzureConfig(
-        subscription_id=_SUB, resource_group="rg",
-        location="eastus", vm_size="Standard_NC6s_v3",
+        subscription_id=_SUB,
+        resource_group="rg",
+        location="eastus",
+        vm_size="Standard_NC6s_v3",
     )
     assert cfg.is_gpu_instance is True
 

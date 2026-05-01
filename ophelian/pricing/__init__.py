@@ -108,7 +108,10 @@ STATIC_PRICES: dict[str, dict[str, dict[str, _T]]] = {
     },
     "gcp": {
         "T4": {
-            "us-central1": [("n1-standard-4+t4", 1, 0.350, False), ("n1-standard-4+t4", 1, 0.13, True)],
+            "us-central1": [
+                ("n1-standard-4+t4", 1, 0.350, False),
+                ("n1-standard-4+t4", 1, 0.13, True),
+            ],
             "europe-west4": [("n1-standard-4+t4", 1, 0.385, False)],
         },
         "L4": {
@@ -127,14 +130,20 @@ STATIC_PRICES: dict[str, dict[str, dict[str, _T]]] = {
     },
     "azure": {
         "T4": {
-            "eastus": [("Standard_NC4as_T4_v3", 1, 0.526, False), ("Standard_NC4as_T4_v3", 1, 0.20, True)],
+            "eastus": [
+                ("Standard_NC4as_T4_v3", 1, 0.526, False),
+                ("Standard_NC4as_T4_v3", 1, 0.20, True),
+            ],
             "westeurope": [("Standard_NC4as_T4_v3", 1, 0.586, False)],
         },
         "V100": {
             "eastus": [("Standard_NC6s_v3", 1, 3.06, False), ("Standard_NC6s_v3", 1, 0.92, True)],
         },
         "A100": {
-            "eastus": [("Standard_NC24ads_A100_v4", 1, 3.67, False), ("Standard_NC24ads_A100_v4", 1, 1.50, True)],
+            "eastus": [
+                ("Standard_NC24ads_A100_v4", 1, 3.67, False),
+                ("Standard_NC24ads_A100_v4", 1, 1.50, True),
+            ],
             "westeurope": [("Standard_NC24ads_A100_v4", 1, 4.10, False)],
         },
         "H100": {
@@ -243,9 +252,7 @@ def lookup_cheapest(
     cache_ttl_seconds:
         TTL for the on-disk live-pricing cache.
     """
-    quotes = static_quotes(
-        gpu_family, providers=providers, regions=regions, spot=spot
-    )
+    quotes = static_quotes(gpu_family, providers=providers, regions=regions, spot=spot)
     if allow_live:
         try:
             quotes.extend(
@@ -339,16 +346,22 @@ def fetch_live(
     refreshed_providers = {p for p, qs in fetched.items() if qs}
     if refreshed_providers:
         preserved_entries = [
-            q for q in cache.get("quotes", [])
+            q
+            for q in cache.get("quotes", [])
             if isinstance(q, dict) and q.get("provider") not in refreshed_providers
         ]
         for provider_quotes in fetched.values():
             preserved_entries.extend(
                 {
-                    "provider": q.provider, "region": q.region,
-                    "instance": q.instance, "gpu_family": q.gpu_family,
-                    "gpu_count": q.gpu_count, "hourly_usd": q.hourly_usd,
-                    "spot": q.spot, "source": q.source, "notes": q.notes,
+                    "provider": q.provider,
+                    "region": q.region,
+                    "instance": q.instance,
+                    "gpu_family": q.gpu_family,
+                    "gpu_count": q.gpu_count,
+                    "hourly_usd": q.hourly_usd,
+                    "spot": q.spot,
+                    "source": q.source,
+                    "notes": q.notes,
                 }
                 for q in provider_quotes
             )
@@ -357,9 +370,7 @@ def fetch_live(
     return out
 
 
-def _fetch_aws_spot_quotes(
-    gpu_family: str, regions: list[str] | None
-) -> list[PriceQuote]:
+def _fetch_aws_spot_quotes(gpu_family: str, regions: list[str] | None) -> list[PriceQuote]:
     """Query ``ec2.describe_spot_price_history`` for the given GPU family.
 
     Falls back to an empty list (with a debug log) if ``boto3`` is not
@@ -368,11 +379,13 @@ def _fetch_aws_spot_quotes(
     """
     family_upper = gpu_family.upper()
     aws_table = STATIC_PRICES.get("aws", {}).get(family_upper, {})
-    instance_types = sorted({
-        instance
-        for region_entries in aws_table.values()
-        for instance, _count, _price, *_rest in region_entries
-    })
+    instance_types = sorted(
+        {
+            instance
+            for region_entries in aws_table.values()
+            for instance, _count, _price, *_rest in region_entries
+        }
+    )
     if not instance_types:
         return []
 
@@ -438,9 +451,7 @@ def _fetch_aws_spot_quotes(
 _AZURE_RETAIL_URL = "https://prices.azure.com/api/retail/prices"
 
 
-def _fetch_azure_retail_quotes(
-    gpu_family: str, regions: list[str] | None
-) -> list[PriceQuote]:
+def _fetch_azure_retail_quotes(gpu_family: str, regions: list[str] | None) -> list[PriceQuote]:
     """Hit the Azure Retail Prices API for every known SKU/region pair.
 
     Returns ``[]`` if ``urllib`` blows up (no network, DNS down, etc.)
@@ -459,9 +470,7 @@ def _fetch_azure_retail_quotes(
 
     skus_by_region: dict[str, set[str]] = {}
     for region in target_regions:
-        skus_by_region[region] = {
-            instance for instance, *_ in azure_table[region]
-        }
+        skus_by_region[region] = {instance for instance, *_ in azure_table[region]}
 
     out: list[PriceQuote] = []
     for region, skus in skus_by_region.items():
@@ -535,9 +544,7 @@ def _azure_retail_query(*, region: str, sku_name: str) -> list[dict[str, Any]]:
 # from the curated table by subtracting the implied static GPU rate.
 
 _GCP_COMPUTE_SERVICE_ID = "6F81-5844-456A"
-_GCP_BILLING_URL = (
-    f"https://cloudbilling.googleapis.com/v1/services/{_GCP_COMPUTE_SERVICE_ID}/skus"
-)
+_GCP_BILLING_URL = f"https://cloudbilling.googleapis.com/v1/services/{_GCP_COMPUTE_SERVICE_ID}/skus"
 
 # Static per-GPU on-demand and spot rates we used when assembling the
 # STATIC_PRICES table. Subtracting these gives us the implied compute
@@ -545,10 +552,10 @@ _GCP_BILLING_URL = (
 # back on top of. Numbers from STATIC_PRICES_LAST_REVIEW.
 _GCP_IMPLIED_GPU_RATES: dict[str, tuple[float, float]] = {
     # gpu_family: (on_demand_per_gpu_per_hour, spot_per_gpu_per_hour)
-    "T4":   (0.35,  0.13),
-    "L4":   (0.71,  0.28),
-    "V100": (2.48,  0.74),
-    "A100": (3.67,  1.40),
+    "T4": (0.35, 0.13),
+    "L4": (0.71, 0.28),
+    "V100": (2.48, 0.74),
+    "A100": (3.67, 1.40),
     "H100": (11.06, 3.75),  # a3-highgpu-8g rates / 8
 }
 
@@ -556,8 +563,8 @@ _GCP_IMPLIED_GPU_RATES: dict[str, tuple[float, float]] = {
 # "Nvidia Tesla A100 GPU" and "Nvidia H100 80GB GPU". Map our family
 # labels to substrings we can match against.
 _GCP_GPU_DESCRIPTORS: dict[str, tuple[str, ...]] = {
-    "T4":   ("Tesla T4",),
-    "L4":   ("Nvidia L4", "L4 GPU"),
+    "T4": ("Tesla T4",),
+    "L4": ("Nvidia L4", "L4 GPU"),
     "V100": ("Tesla V100",),
     "A100": ("Tesla A100",),
     "H100": ("H100 80GB", "H100 GPU"),
@@ -565,19 +572,23 @@ _GCP_GPU_DESCRIPTORS: dict[str, tuple[str, ...]] = {
 
 # Continent buckets the Cloud Billing API uses in SKU descriptions.
 _GCP_REGION_CONTINENTS: dict[str, str] = {
-    "us-central1": "Americas", "us-east1": "Americas",
-    "us-east4": "Americas", "us-west1": "Americas",
-    "us-west2": "Americas", "us-west4": "Americas",
-    "europe-west1": "EMEA", "europe-west2": "EMEA",
-    "europe-west3": "EMEA", "europe-west4": "EMEA",
-    "asia-east1": "APAC", "asia-northeast1": "APAC",
+    "us-central1": "Americas",
+    "us-east1": "Americas",
+    "us-east4": "Americas",
+    "us-west1": "Americas",
+    "us-west2": "Americas",
+    "us-west4": "Americas",
+    "europe-west1": "EMEA",
+    "europe-west2": "EMEA",
+    "europe-west3": "EMEA",
+    "europe-west4": "EMEA",
+    "asia-east1": "APAC",
+    "asia-northeast1": "APAC",
     "asia-southeast1": "APAC",
 }
 
 
-def _fetch_gcp_billing_quotes(
-    gpu_family: str, regions: list[str] | None
-) -> list[PriceQuote]:
+def _fetch_gcp_billing_quotes(gpu_family: str, regions: list[str] | None) -> list[PriceQuote]:
     """Live GPU rate x gpu_count + static compute base for every known instance.
 
     Requires ``GOOGLE_API_KEY`` env var (Cloud Billing Catalog API
@@ -586,9 +597,7 @@ def _fetch_gcp_billing_quotes(
     Returns ``[]`` and logs at debug level if the key is missing,
     the catalog is unreachable, or the GPU descriptor is unknown.
     """
-    api_key = os.environ.get("GOOGLE_API_KEY") or os.environ.get(
-        "GOOGLE_CLOUD_API_KEY"
-    )
+    api_key = os.environ.get("GOOGLE_API_KEY") or os.environ.get("GOOGLE_CLOUD_API_KEY")
     if not api_key:
         logger.debug(
             "Live GCP pricing skipped: GOOGLE_API_KEY not set "
@@ -603,10 +612,7 @@ def _fetch_gcp_billing_quotes(
         return []
 
     target_regions = list(regions) if regions else list(gcp_table.keys())
-    target_regions = [
-        r for r in target_regions
-        if r in gcp_table and r in _GCP_REGION_CONTINENTS
-    ]
+    target_regions = [r for r in target_regions if r in gcp_table and r in _GCP_REGION_CONTINENTS]
     if not target_regions:
         return []
 
@@ -628,9 +634,7 @@ def _fetch_gcp_billing_quotes(
             if live_per_gpu is None:
                 continue
             implied_per_gpu = implied_spot if is_spot else implied_on_demand
-            compute_base = max(
-                0.0, static_hourly - implied_per_gpu * gpu_count
-            )
+            compute_base = max(0.0, static_hourly - implied_per_gpu * gpu_count)
             total = round(live_per_gpu * gpu_count + compute_base, 4)
             if total <= 0:
                 continue
@@ -726,9 +730,9 @@ def _gcp_unit_price(sku: dict[str, Any]) -> float | None:
     pricing_info = sku.get("pricingInfo")
     if not isinstance(pricing_info, list) or not pricing_info:
         return None
-    expression = pricing_info[0].get("pricingExpression") if isinstance(
-        pricing_info[0], dict
-    ) else None
+    expression = (
+        pricing_info[0].get("pricingExpression") if isinstance(pricing_info[0], dict) else None
+    )
     if not isinstance(expression, dict):
         return None
     tiered = expression.get("tieredRates")
@@ -774,6 +778,7 @@ def _http_get_json(url: str, *, timeout: float = 8.0) -> Any:
 
 def _url_quote(value: str) -> str:
     from urllib.parse import quote
+
     return quote(value, safe="")
 
 
@@ -813,16 +818,13 @@ def explain(decision: RouterDecision) -> str:
     ]
     if decision.considered:
         runners_up = [
-            qq
-            for qq in sorted(decision.considered, key=lambda q: q.hourly_usd)[:5]
-            if qq is not q
+            qq for qq in sorted(decision.considered, key=lambda q: q.hourly_usd)[:5] if qq is not q
         ]
         if runners_up:
             lines.append("  Runners-up:")
             for qq in runners_up:
                 lines.append(
-                    f"    - {qq.provider}/{qq.region} {qq.instance:>30}  "
-                    f"{qq.hourly_usd:.3f} USD/h"
+                    f"    - {qq.provider}/{qq.region} {qq.instance:>30}  {qq.hourly_usd:.3f} USD/h"
                 )
     return "\n".join(lines)
 

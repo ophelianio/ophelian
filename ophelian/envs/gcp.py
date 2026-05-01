@@ -235,8 +235,7 @@ class GCPConfig(BaseModel):
             return value
         if not value.startswith("nvidia-"):
             raise ValueError(
-                f"gpu_type={value!r} must start with 'nvidia-' "
-                f"(known: {', '.join(GPU_TYPES)})"
+                f"gpu_type={value!r} must start with 'nvidia-' (known: {', '.join(GPU_TYPES)})"
             )
         return value
 
@@ -254,8 +253,7 @@ class GCPConfig(BaseModel):
     def _backend_consistency(self) -> GCPConfig:
         if self.gcp_backend == "gke" and not self.gke_cluster:
             raise ValueError(
-                "gcp_backend='gke' requires `gke_cluster=<name>` so the provider "
-                "can submit Jobs."
+                "gcp_backend='gke' requires `gke_cluster=<name>` so the provider can submit Jobs."
             )
         if self.spot and self.gcp_backend == "gke":
             raise ValueError(

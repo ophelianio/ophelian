@@ -261,13 +261,9 @@ class AzureVMDriver:
                 network_interface_name=name,
             )
         except Exception as exc:  # pragma: no cover - permissions-dependent
-            logger.warning(
-                "network_interfaces.begin_delete failed for %s: %s", name, exc
-            )
+            logger.warning("network_interfaces.begin_delete failed for %s: %s", name, exc)
 
-    def _build_vm_body(
-        self, request: StepRequest, name: str, nic_id: str
-    ) -> dict[str, Any]:
+    def _build_vm_body(self, request: StepRequest, name: str, nic_id: str) -> dict[str, Any]:
         cfg = self._config
         custom_data = base64.b64encode(_cloud_init(cfg, request).encode("utf-8")).decode("ascii")
         body: dict[str, Any] = {

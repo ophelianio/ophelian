@@ -4,7 +4,7 @@
 
 set -euo pipefail
 
-echo "[post-merge] syncing Python dependencies with uv..."
-uv sync --extra dev
+echo "[post-merge] syncing Python dependencies with uv (locked)..."
+uv sync --frozen --extra dev
 
 echo "[post-merge] done."

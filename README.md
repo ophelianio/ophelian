@@ -5,8 +5,8 @@
 [![PyPI](https://img.shields.io/pypi/v/ophelian.svg)](https://pypi.org/project/ophelian/)
 [![Python](https://img.shields.io/pypi/pyversions/ophelian.svg)](https://pypi.org/project/ophelian/)
 [![License](https://img.shields.io/pypi/l/ophelian.svg)](LICENSE)
-[![CI](https://github.com/LuisFalva/ophelia/actions/workflows/ci.yml/badge.svg)](https://github.com/LuisFalva/ophelia/actions/workflows/ci.yml)
-[![Docs](https://github.com/LuisFalva/ophelia/actions/workflows/docs.yml/badge.svg)](https://luisfalva.github.io/ophelia/)
+[![CI](https://github.com/LuisFalva/ophelian/actions/workflows/ci.yml/badge.svg)](https://github.com/LuisFalva/ophelian/actions/workflows/ci.yml)
+[![Docs](https://github.com/LuisFalva/ophelian/actions/workflows/docs.yml/badge.svg)](https://luisfalva.github.io/ophelian/)
 
 Ophelian is a small, opinionated Python framework for taking ML / AI
 prototypes to production without rewriting them every time the runtime
@@ -114,17 +114,17 @@ rich table summary you can paste into a Slack thread.
 
 ## Docs
 
-Full docs at **<https://luisfalva.github.io/ophelia/>**:
+Full docs at **<https://luisfalva.github.io/ophelian/>**:
 
-- [Quickstart](https://luisfalva.github.io/ophelia/quickstart/)
-- [Concepts](https://luisfalva.github.io/ophelia/concepts/)
-- Envs: [AWS](https://luisfalva.github.io/ophelia/envs/aws/) ·
-  [GCP](https://luisfalva.github.io/ophelia/envs/gcp/) ·
-  [Azure](https://luisfalva.github.io/ophelia/envs/azure/) ·
-  [Standalone](https://luisfalva.github.io/ophelia/envs/standalone/) ·
-  [Auto](https://luisfalva.github.io/ophelia/envs/auto/)
-- [Cookbook](https://luisfalva.github.io/ophelia/cookbook/) ·
-  [Troubleshooting](https://luisfalva.github.io/ophelia/troubleshooting/)
+- [Quickstart](https://luisfalva.github.io/ophelian/quickstart/)
+- [Concepts](https://luisfalva.github.io/ophelian/concepts/)
+- Envs: [AWS](https://luisfalva.github.io/ophelian/envs/aws/) ·
+  [GCP](https://luisfalva.github.io/ophelian/envs/gcp/) ·
+  [Azure](https://luisfalva.github.io/ophelian/envs/azure/) ·
+  [Standalone](https://luisfalva.github.io/ophelian/envs/standalone/) ·
+  [Auto](https://luisfalva.github.io/ophelian/envs/auto/)
+- [Cookbook](https://luisfalva.github.io/ophelian/cookbook/) ·
+  [Troubleshooting](https://luisfalva.github.io/ophelian/troubleshooting/)
 
 ## Status
 

@@ -273,5 +273,7 @@ new.
   TensorFlow / Dask dependencies, the Poetry/Makefile workflow, the old
   Dockerfile, the legacy tutorials and notebooks.
 
-[Unreleased]: https://github.com/LuisFalva/ophelia/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/LuisFalva/ophelia/releases/tag/v0.1.0
+[Unreleased]: https://github.com/LuisFalva/ophelian/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/LuisFalva/ophelian/compare/v0.5.0...v1.0.0
+[0.5.0]: https://github.com/LuisFalva/ophelian/compare/v0.1.0...v0.5.0
+[0.1.0]: https://github.com/LuisFalva/ophelian/releases/tag/v0.1.0

@@ -209,9 +209,7 @@ class AWSConfig(BaseModel):
     def _valid_region(cls, value: str) -> str:
         if not value or not isinstance(value, str):
             raise ValueError("region must be a non-empty string")
-        if value not in KNOWN_REGIONS and not re.match(
-            r"^[a-z]{2}-[a-z]+-\d$", value
-        ):
+        if value not in KNOWN_REGIONS and not re.match(r"^[a-z]{2}-[a-z]+-\d$", value):
             # Accept anything that *looks* like an AWS region — keeps us
             # compatible with newly-launched regions — but warn for typos.
             raise ValueError(

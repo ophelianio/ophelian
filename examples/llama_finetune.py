@@ -24,9 +24,7 @@ import os
 from ophelian import Auto, Data, Deploy, Eval, Pipeline, Train
 
 DATASET = os.environ.get("OPHELIAN_DATASET", "s3://ophelian-demo/instruct/train.jsonl")
-EVAL_DATASET = os.environ.get(
-    "OPHELIAN_EVAL_DATASET", "s3://ophelian-demo/instruct/eval.jsonl"
-)
+EVAL_DATASET = os.environ.get("OPHELIAN_EVAL_DATASET", "s3://ophelian-demo/instruct/eval.jsonl")
 MODEL = os.environ.get("OPHELIAN_MODEL", "meta-llama/Llama-3.1-8B-Instruct")
 GPU = os.environ.get("OPHELIAN_GPU", "A100")
 

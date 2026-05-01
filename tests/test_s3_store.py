@@ -49,9 +49,7 @@ def test_put_and_get_file(store: S3ArtifactStore, tmp_path: Path) -> None:
     assert fetched.read_bytes() == b"weights"
 
 
-def test_put_directory_uploads_all_files(
-    store: S3ArtifactStore, tmp_path: Path
-) -> None:
+def test_put_directory_uploads_all_files(store: S3ArtifactStore, tmp_path: Path) -> None:
     src = tmp_path / "model"
     (src / "inner").mkdir(parents=True)
     (src / "inner" / "weights.bin").write_bytes(b"abc")
@@ -122,9 +120,7 @@ def test_fetch_s3_object_helper(s3_env: None, tmp_path: Path) -> None:
     client.create_bucket(Bucket="data-bucket")
     client.put_object(Bucket="data-bucket", Key="datasets/sample.json", Body=b'{"X": [], "y": []}')
     cache = tmp_path / "cache"
-    path = fetch_s3_object_to_tempfile(
-        "s3://data-bucket/datasets/sample.json", cache_dir=cache
-    )
+    path = fetch_s3_object_to_tempfile("s3://data-bucket/datasets/sample.json", cache_dir=cache)
     assert path.read_text() == '{"X": [], "y": []}'
 
 
@@ -132,9 +128,7 @@ def test_fetch_s3_object_missing_raises(s3_env: None, tmp_path: Path) -> None:
     client = boto3.client("s3", region_name="us-east-1")
     client.create_bucket(Bucket="data-bucket")
     with pytest.raises(FileNotFoundError):
-        fetch_s3_object_to_tempfile(
-            "s3://data-bucket/missing.json", cache_dir=tmp_path / "c"
-        )
+        fetch_s3_object_to_tempfile("s3://data-bucket/missing.json", cache_dir=tmp_path / "c")
 
 
 def test_constructor_rejects_blank_bucket() -> None:

@@ -65,9 +65,7 @@ def emit_run_summary(
         _render_plain(provider, run_id, pipeline, description, rows, out, hourly_usd)
 
 
-def _step_payload(
-    step: StepResult, hourly_usd: float | None = None
-) -> dict[str, Any]:
+def _step_payload(step: StepResult, hourly_usd: float | None = None) -> dict[str, Any]:
     duration = step.duration_seconds
     cost = _estimate_cost_usd(step, duration, hourly_usd)
     return {
@@ -96,11 +94,7 @@ def _estimate_cost_usd(
     if duration is None:
         return None
     info = step.info or {}
-    hourly = (
-        info.get("router_quote_hourly_usd")
-        or info.get("hourly_usd")
-        or fallback_hourly
-    )
+    hourly = info.get("router_quote_hourly_usd") or info.get("hourly_usd") or fallback_hourly
     try:
         hourly_f = float(hourly) if hourly is not None else None
     except (TypeError, ValueError):
@@ -139,13 +133,7 @@ def _render_rich(
     total_duration = 0.0
     for step in steps:
         status = step.status
-        style = (
-            "green"
-            if status == "success"
-            else "yellow"
-            if status == "skipped"
-            else "red"
-        )
+        style = "green" if status == "success" else "yellow" if status == "skipped" else "red"
         duration = step.duration_seconds
         cost = _estimate_cost_usd(step, duration, hourly_usd)
         if duration is not None:
@@ -166,9 +154,7 @@ def _render_rich(
     footer_bits = [f"total {_format_duration(total_duration)}"]
     if have_cost:
         footer_bits.append(f"≈ ${total_cost:.4f} (router quote * duration)")
-    footer_bits.append(
-        "GPU util: not collected — install an in-VM nvidia-smi sidecar to populate."
-    )
+    footer_bits.append("GPU util: not collected — install an in-VM nvidia-smi sidecar to populate.")
     console.print("[dim]" + " · ".join(footer_bits) + "[/]")
     failed = [s for s in steps if s.status == "failed"]
     if failed:
@@ -191,8 +177,7 @@ def _render_plain(
     if description:
         out.write(f"  {description}\n")
     out.write(
-        f"  {'STEP':<24} {'KIND':<8} {'STATUS':<10} {'DURATION':<10} "
-        f"{'COST(USD)':<12} METRICS\n"
+        f"  {'STEP':<24} {'KIND':<8} {'STATUS':<10} {'DURATION':<10} {'COST(USD)':<12} METRICS\n"
     )
     total_cost = 0.0
     have_cost = False
@@ -213,9 +198,7 @@ def _render_plain(
     out.write(f"  total {_format_duration(total_duration)}")
     if have_cost:
         out.write(f"  ≈ ${total_cost:.4f} (router quote * duration)")
-    out.write(
-        "  GPU util: not collected — install an in-VM nvidia-smi sidecar.\n"
-    )
+    out.write("  GPU util: not collected — install an in-VM nvidia-smi sidecar.\n")
     failed = [s for s in steps if s.status == "failed"]
     if failed:
         out.write(

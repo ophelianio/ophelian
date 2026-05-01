@@ -40,8 +40,13 @@ jobs:
           cache-dependency-glob: "uv.lock"
       - run: uv python install 3.12
       - run: uv sync --frozen --extra dev --extra all
-      - name: Export resolved requirements
-        run: uv export --frozen --no-hashes --format requirements-txt > requirements.audit.txt
+      - name: Export resolved requirements (all extras + dev)
+        # Explicit extras list so the audit covers every dep that any
+        # downstream user might install via `pip install ophelian[...]`.
+        # `--all-extras` would also pull dev tools; we keep dev separate
+        # because its purpose is documented (lint/test/build) and we want
+        # advisories on dev tooling to surface here too.
+        run: uv export --frozen --no-hashes --all-extras --format requirements-txt > requirements.audit.txt
       - name: Run pip-audit
         uses: pypa/gh-action-pip-audit@v1.1.0
         with:

@@ -1,0 +1,38 @@
+version: 2
+
+# Dependabot keeps the SHA-pinned `uses:` lines in our workflows up to
+# date by opening reviewable PRs. We pin actions to immutable 40-char
+# commit hashes for supply-chain safety (a tag like `v4` can be moved
+# by the action's maintainer or an attacker with write access). Without
+# this config, those pins would silently rot; with it, we get a weekly
+# PR per outdated action that a human can review and merge.
+#
+# Docs: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates
+updates:
+  # ---------------------------------------------------------------
+  # GitHub Actions used by every workflow under .github/workflows/.
+  # Dependabot rewrites the SHA in each `uses:` line and refreshes
+  # the trailing `# <tag>` comment, so the immutable pin stays
+  # current without us having to chase upstream releases by hand.
+  # ---------------------------------------------------------------
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    # Group routine minor/patch bumps into a single PR so reviewers
+    # don't drown in noise; majors still come as standalone PRs.
+    groups:
+      actions-minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"

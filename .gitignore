@@ -1,4 +1,6 @@
+# ---------------------------------------------------------------------------
 # Python
+# ---------------------------------------------------------------------------
 __pycache__/
 *.py[cod]
 *$py.class
@@ -23,13 +25,17 @@ pip-wheel-metadata/
 *.manifest
 *.spec
 
+# ---------------------------------------------------------------------------
 # Virtual environments
+# ---------------------------------------------------------------------------
 .venv/
 venv/
 env/
 ENV/
 
-# Tooling
+# ---------------------------------------------------------------------------
+# Tooling caches
+# ---------------------------------------------------------------------------
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
@@ -40,30 +46,72 @@ coverage.xml
 *.cover
 .tox/
 .nox/
+.hypothesis/
 
+# ---------------------------------------------------------------------------
 # Notebooks
+# ---------------------------------------------------------------------------
 .ipynb_checkpoints/
 
-# IDEs
+# ---------------------------------------------------------------------------
+# IDEs / editors
+# ---------------------------------------------------------------------------
 .idea/
 .vscode/
 *.sublime-workspace
+*.sublime-project
+*.swp
+*.swo
+*~
+.~*
 
-# OS
+# ---------------------------------------------------------------------------
+# OS junk
+# ---------------------------------------------------------------------------
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# Replit
+# ---------------------------------------------------------------------------
+# Replit-specific (do not ship on PyPI / public repo)
+# ---------------------------------------------------------------------------
+.replit
+.replitignore
+replit.md
+.agents/
 .cache/
 .local/
 .upm/
 .config/
 .pythonlibs/
+.breakpoints
+.replit-artifact/
+**/.replit-artifact/
+attached_assets/
+.replit_workspace_history/
 
-# Node (kept for Replit scaffolding)
+# Legacy Node/pnpm leftovers from the old monorepo template
 node_modules/
+package.json
+package-lock.json
+pnpm-lock.yaml
+pnpm-workspace.yaml
 
-# Local artifacts
+# ---------------------------------------------------------------------------
+# Ophelian-local artifacts (run outputs, model dumps, etc.)
+# ---------------------------------------------------------------------------
 .ophelian/
 artifacts/
+runs/
+checkpoints/
+
+# ---------------------------------------------------------------------------
+# Logs & temp
+# ---------------------------------------------------------------------------
 *.log
+*.tmp
+*.bak
+*.orig
+*.rej
+tmp/
+.tmp/

@@ -1,0 +1,33 @@
+# Local directories
+*.idea
+*.ipynb_checkpoints
+*.pytest_cache
+*.build
+*.dist
+*.egg-info
+*.tox
+
+# Wheel directories
+build
+dist
+
+# Virtualenv env
+*env
+*venv
+
+# File extensions
+*.pyc
+*.pylint.txt
+*.DS_Store
+
+# Spark warehouse
+*spark-warehouse
+*_SUCCESS
+
+# Tests
+*out
+.coverage
+htmlcov
+
+# Poetry lock
+*.lock

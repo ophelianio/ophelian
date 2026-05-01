@@ -1,0 +1,36 @@
+default_language_version:
+  python: python3
+
+default_stages: [commit, push]
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: check-yaml
+        exclude: ^ophelia/.github/|README\.md$
+      - id: end-of-file-fixer
+        exclude: LICENSE|README\.md$
+
+  - repo: local
+    hooks:
+      - id: pyupgrade
+        name: pyupgrade
+        entry: poetry run pyupgrade --py38-plus
+        language: system
+        types: [python]
+        exclude: ^ophelia/|README\.md$
+
+      - id: isort
+        name: isort
+        entry: poetry run isort .
+        language: system
+        types: [python]
+        exclude: ^ophelia/|README\.md$
+
+      - id: black
+        name: black
+        entry: poetry run black .
+        language: system
+        types: [python]
+        exclude: ^ophelia/|README\.md$

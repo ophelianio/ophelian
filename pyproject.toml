@@ -1,0 +1,122 @@
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "ophelian"
+version = "0.1.4"
+description = "Ophelian is a go-to framework for seamlessly putting ML & AI prototypes into production."
+authors = ["Luis Falva <falvaluis@gmail.com>"]
+license = "Free for non-commercial use"
+readme = "README.md"
+homepage = "https://github.com/LuisFalva/ophelia"
+repository = "https://github.com/LuisFalva/ophelia"
+documentation = "https://github.com/LuisFalva/ophelia"
+keywords = ["ophelian", "ophelian-on-mars"]
+classifiers = [
+    "Development Status :: 1 - Planning",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Financial and Insurance Industry",
+    "License :: Free for non-commercial use",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Office/Business :: Financial :: Investment",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Information Analysis"
+]
+
+[tool.poetry.dependencies]
+python = ">=3.9,<3.12"
+pyspark = "3.2.2"
+numpy = "1.26.4"
+pyhocon = "0.3.45"
+pandas = "2.2.2"
+py4j = ">=0.10.9"
+dask = {version = ">=2021.10.0", extras = ["dataframe"]}
+scikit-learn = ">=0.23.2"
+quadprog = "*"
+pyarrow = "16.0.0"
+shap = ">=0.40.0"
+tensorflow = ">=2.9.0"
+
+[tool.poetry.dev-dependencies]
+bump2version = "0.5.11"
+Sphinx = "1.8.5"
+recommonmark = "0.4.0"
+wheel = "0.38.1"
+watchdog = "0.9.0"
+twine = "1.14.0"
+docutils = "0.16"
+pre-commit = "*"
+bandit = "^1.7.7"
+pyupgrade = "^2.29.1"
+safety = "^1.10.3"
+isort = "^5.9.3"
+black = "^24.1.0"
+coverage-badge = "^1.0.0"
+darglint = "^1.8.1"
+pydocstyle = "^6.3.0"
+pylint = "^3.0.3"
+pytest = "7.4.4"
+coverage = "^7.4.1"
+pytest-html = "^4.1.1"
+pytest-cov = "^4.1.0"
+tox = "*"
+flake8 = "3.7.8"
+
+[tool.poetry.group.test.dependencies]
+pytest = "7.4.4"
+tox = "*"
+flake8 = "3.7.8"
+coverage = "^7.4.1"
+pyhocon = "0.3.45"
+
+[tool.poetry.group.dev.dependencies]
+bandit = "^1.7.7"
+pyupgrade = "^2.29.1"
+safety = "^1.10.3"
+pre-commit = "^2.15.0"
+
+[tool.poetry.group.dev_latest.dependencies]
+isort = {extras = ["colors"], version = "^5.13.2"}
+black = {version = "^24.1.0", allow-prereleases = true}
+coverage-badge = "^1.1.0"
+darglint = "^1.8.1"
+pydocstyle = "^6.3.0"
+pylint = "^3.0.3"
+pytest = "7.4.4"
+coverage = "^7.4.1"
+pytest-html = "^4.1.1"
+pytest-cov = "^4.1.0"
+
+[tool.isort]
+profile = "black"
+
+[tool.coverage.run]
+source = ["src"]
+
+[coverage.paths]
+source = "src"
+
+[coverage.run]
+branch = true
+
+[coverage.report]
+fail_under = 50
+show_missing = true
+
+[tool.pytest.ini_options]
+norecursedirs =["hooks", "*.egg", ".eggs", "dist", "build", "docs", ".tox", ".git", "__pycache__"]
+doctest_optionflags = ["NUMBER", "NORMALIZE_WHITESPACE", "IGNORE_EXCEPTION_DETAIL"]
+addopts = [
+  "--strict-markers",
+  "--tb=short",
+  "--doctest-modules",
+  "--doctest-continue-on-failure",
+]

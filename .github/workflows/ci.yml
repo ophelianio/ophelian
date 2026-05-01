@@ -1,73 +1,160 @@
 name: CI
 
+# Triggers:
+#   - every push to ANY branch (so feature branches get fast feedback)
+#   - every PR targeting main (so reviewers see green/red before merging)
+#   - manual dispatch (so anyone can re-run on demand)
 on:
   push:
-    branches: [main]
+    branches: ["**"]
+    tags-ignore: ["**"]   # the Release workflow handles tags
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
+# Cancel superseded runs on the same ref so a fast follow-up commit
+# stops the previous, now-stale CI run instead of paying for both.
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
   contents: read
 
+env:
+  PYTHONUNBUFFERED: "1"
+  FORCE_COLOR: "1"
+  UV_NO_SYNC_LOCK: "1"   # fail loudly if uv.lock would change
+
 jobs:
-  lint-typecheck-test:
-    name: ${{ matrix.python-version }} · ${{ matrix.os }}
+  # ---------------------------------------------------------------
+  # Lint, type-check, unit tests across the support matrix.
+  # This is the gating job for branch protection.
+  # ---------------------------------------------------------------
+  test:
+    name: ${{ matrix.os }} · py${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
-        python-version: ["3.11", "3.12"]
+        include:
+          - { os: ubuntu-latest, python-version: "3.11" }
+          - { os: ubuntu-latest, python-version: "3.12" }
+          - { os: ubuntu-latest, python-version: "3.13" }
+          - { os: macos-latest,  python-version: "3.12" }
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
         with:
-          python-version: ${{ matrix.python-version }}
-          cache: pip
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
 
-      - name: Install package + dev extras
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install -e '.[sklearn,dev]'
+      - name: Install Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
+
+      - name: Sync dependencies (locked)
+        run: uv sync --frozen --extra dev
 
       - name: Ruff (lint)
-        run: ruff check ophelian tests
+        run: uv run ruff check ophelian tests
 
       - name: Ruff (format check)
-        run: ruff format --check ophelian tests
+        run: uv run ruff format --check ophelian tests
 
       - name: Mypy (strict)
-        run: mypy ophelian
+        run: uv run mypy ophelian
 
-      - name: Pytest
-        run: pytest --cov=ophelian --cov-report=term-missing
+      - name: Pytest (unit, with coverage gate)
+        run: |
+          uv run pytest \
+            --cov=ophelian \
+            --cov-branch \
+            --cov-report=term-missing \
+            --cov-report=xml \
+            --cov-fail-under=75
 
-  docker-integration:
-    name: Docker integration · 3.12
+      - name: Upload coverage XML (Linux 3.12 only)
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml
+          path: coverage.xml
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------
+  # Pre-commit hooks must pass against the full tree.
+  # Catches drift between the local hooks and what's committed.
+  # ---------------------------------------------------------------
+  pre-commit:
+    name: pre-commit
     runs-on: ubuntu-latest
-    needs: lint-typecheck-test
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v4
         with:
-          python-version: "3.12"
-          cache: pip
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+      - run: uv python install 3.12
+      - run: uv sync --frozen --extra dev
+      - name: Run pre-commit on all files
+        run: uv run pre-commit run --all-files --show-diff-on-failure
 
+  # ---------------------------------------------------------------
+  # Build the wheel + sdist on every push so we catch packaging
+  # regressions (missing files, broken metadata) BEFORE tag time.
+  # `twine check` validates that PyPI will render the README and
+  # accept the metadata.
+  # ---------------------------------------------------------------
+  build-dist:
+    name: Build & verify distribution
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - run: uv python install 3.12
+      - run: uv sync --frozen --extra dev
+
+      - name: Build sdist + wheel
+        run: uv run python -m build
+
+      - name: Twine check (PyPI metadata)
+        run: uv run twine check --strict dist/*
+
+      - name: Upload built distributions
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ github.sha }}
+          path: dist/
+          retention-days: 14
+
+  # ---------------------------------------------------------------
+  # Docker integration tests. Kept separate because they need a
+  # real Docker daemon (only Linux runners have one out of the box)
+  # and they're slower than the unit suite.
+  # ---------------------------------------------------------------
+  docker-integration:
+    name: Docker integration · py3.12
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+      - run: uv python install 3.12
+      - run: uv sync --frozen --extra dev
       - name: Verify Docker daemon is running
         run: docker info
-
-      - name: Install package + dev extras
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install -e '.[sklearn,dev]'
-
       - name: Run Docker integration tests
-        run: pytest tests/test_docker_integration.py -v
+        run: uv run pytest tests/test_docker_integration.py -v

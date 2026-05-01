@@ -1,0 +1,87 @@
+name: Security
+
+# Three layers of automated security checks:
+#   1. pip-audit  — known CVEs in our pinned dependency tree
+#   2. bandit     — static analysis for common Python security issues
+#   3. gitleaks   — scan diffs for accidentally-committed secrets
+#
+# Runs on every push and PR for fast feedback, plus a weekly cron
+# so newly-disclosed CVEs surface even when the repo is quiet.
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * 1"   # Mondays, 06:00 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # ---------------------------------------------------------------
+  # pip-audit — checks installed dependencies (resolved from
+  # uv.lock) against the PyPI Advisory DB. Fails on any known CVE.
+  # ---------------------------------------------------------------
+  pip-audit:
+    name: pip-audit (dependencies)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+      - run: uv python install 3.12
+      - run: uv sync --frozen --extra dev --extra all
+      - name: Export resolved requirements
+        run: uv export --frozen --no-hashes --format requirements-txt > requirements.audit.txt
+      - name: Run pip-audit
+        uses: pypa/gh-action-pip-audit@v1.1.0
+        with:
+          inputs: requirements.audit.txt
+          # Allow human review of advisories without ignoring them.
+          # Add specific advisory IDs here only when accepting risk.
+          ignore-vulns: ""
+
+  # ---------------------------------------------------------------
+  # bandit — static analysis for common Python security smells
+  # (eval/exec, weak hashing, hardcoded secrets, etc.). Configured
+  # to scan the library only; tests and examples are excluded.
+  # ---------------------------------------------------------------
+  bandit:
+    name: bandit (static analysis)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+      - run: uv python install 3.12
+      - name: Install bandit
+        run: uv tool install "bandit[toml]>=1.7"
+      - name: Run bandit
+        run: uv tool run bandit -r ophelian -c pyproject.toml --severity-level medium
+
+  # ---------------------------------------------------------------
+  # gitleaks — detects committed secrets (AWS keys, GCP service
+  # accounts, generic high-entropy strings). Scans the diff on PRs
+  # and the full history on push to main / cron runs.
+  # ---------------------------------------------------------------
+  gitleaks:
+    name: gitleaks (secret scan)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,272 +1,234 @@
-<div align="center" style="padding: 20px;">
-  <img src="docs/img/ophelian-ai-sticker.png" alt="Ophelian AI Sticker" width="200" style="margin-top: 20px;">
+# Ophelian
 
-  <p style="color: #FFF; font-family: 'Helvetica Neue', Arial, sans-serif; text-align: center; max-width: 600px; margin: 20px auto; font-weight: bold;">
-  </p>
-  
-  <div style="margin-top: 20px;">
-    <a href="https://pypi.org/project/ophelian/" style="margin-right: 10px;">
-      <img src="https://img.shields.io/pypi/v/ophelian.svg" alt="PyPI">
-    </a>
-    <a href="https://hub.docker.com/r/luisfalva/ophelian" style="margin-right: 10px;">
-      <img src="https://img.shields.io/docker/v/luisfalva/ophelian?sort=semver" alt="Docker Hub">
-    </a>
-    <a href="https://github.com/LuisFalva/ophelia/actions/workflows/release.yml" style="margin-right: 10px;">
-      <img src="https://github.com/LuisFalva/ophelia/actions/workflows/release.yml/badge.svg" alt="Release Build Status">
-    </a>
-    <a href="https://github.com/LuisFalva/ophelia/actions/workflows/docker-image.yml" style="margin-right: 10px;">
-      <img src="https://github.com/LuisFalva/ophelia/actions/workflows/docker-image.yml/badge.svg" alt="Docker Image Build Status">
-    </a>
-    <a href="https://ophelian.readme.io/">
-      <img src="https://img.shields.io/badge/docs-Documentation-orange.svg" alt="Docs">
-    </a>
-  </div>
-</div>
+> Declarative ML framework. Write your pipeline once — run it anywhere.
 
-# Ophelian On Mars
+Ophelian is a small, opinionated Python framework for taking ML / AI prototypes
+to production without rewriting them every time the runtime changes. You write
+a **Pipeline** with declarative nodes (`Data`, `Train`, `Tune`, `Eval`,
+`Deploy`) and the framework compiles it into an execution plan that an **env**
+(a backend) knows how to run. Today the only env is `Standalone(local=True)`,
+which runs every step **in a local Docker container** when a Docker daemon is
+available — and falls back to running the same logic in-process when it isn't,
+so notebooks, CI without Docker, and quick experiments still work without any
+configuration. AWS / GCP / Azure envs land in upcoming milestones; pipelines
+do not change.
 
----
+## Vision
 
-'*Ophelian On Mars*' 👽, the ultimate destination for ML, Data Science, and AI professionals. Your go-to framework for seamlessly putting ML prototypes into production—where everyone wants to be, but only a few succeed.
-
-# 🚀 Motivations
-
-As data professionals, we aim to minimize the time spent deciphering the intricacies of PySpark's framework. Often, we seek a straightforward, Pandas-style approach to compute tasks without delving into highly optimized Spark code. 
-
-To address this need, Ophelian was created with the following goals:
-
-- **Simplicity**: Provide a simple and intuitive way to perform data computations, emulating the ease of Pandas.
-- **Efficiency**: Wrap common patterns for data extraction and transformation in a single entry function that ensures Spark-optimized performance.
-- **Code Reduction**: Significantly reduce the amount of code required by leveraging a set of Spark optimization techniques for query execution.
-- **Streamlined ML Pipelines**: Facilitate the lifecycle of any PySpark ML pipeline by incorporating optimized methods and reducing redundant coding efforts.
-
-By focusing on these motivations, Ophelian aims to enhance productivity and efficiency for data engineers and scientists, allowing them to concentrate on their core tasks without worrying about underlying Spark optimizations.
-
-# 📝 Generalized ML Features
-
-Ophelian focuses on creating robust and efficient machine learning (ML) pipelines, making them easily replicable and secure for various ML tasks. Key features include optimized techniques for handling data skewness, user-friendly interfaces for building custom models, and streamlined data mining pipelines with Ophelian pipeline wrappers. Additionally, it functions as an emulator of NumPy and Pandas, offering similar functionalities for a seamless user experience. Below are the detailed features:
-
-- **Framework for Building ML Pipelines**: Simplified and secure methods to construct ML pipelines using PySpark, ensuring replication and robustness.
-- **Optimized Techniques for Data Skewness and Partitioning**: Embedded strategies to address and mitigate data skewness issues, improving model performance and accuracy.
-- **Build Your Own Models (BYOM)**: User-friendly software for constructing custom models and data mining pipelines, leveraging frameworks like PySpark, Beam, Flink, PyTorch, and more, with Ophelian native wrappers for enhanced syntax flexibility and efficiency.
-- **NumPy and Pandas Functionality Syntax Emulation**: Emulates the functions and features of NumPy and Pandas, making it intuitive and easy for users familiar with these libraries to transition and utilize similar functionalities within an ML pipeline.
-
-These features empower users with the tools they need to handle complex ML tasks effectively, ensuring a seamless experience from data processing to model deployment. users with the tools they need to handle complex machine learning tasks effectively, ensuring a seamless experience from data processing to model deployment.
-
-# Getting Started:
-
-### 📜 Requirements
-
-Before starting, you'll need to have installed: 
-- pyspark >= 3.0.x
-- pandas >= 1.1.3
-- numpy >= 1.19.1
-- dask >= 2.30.x
-- scikit-learn >= 0.23.x
-
-Additionally, if you want to use the Ophelian packages, you'll also need Python (supported 3.7 and 3.8 versions) and pip installed.
-
-### 🛠 Install Ophelian pypi package
-
-Just drop a pip install to the `Ophelian` pypi registry and import `Ophelian`:
-```sh
-pip install ophelian==0.1.4
+```text
+              ┌──────────────────────────┐
+              │     Pipeline (DSL)       │   declarative, immutable
+              │  Train · Tune · Eval ·   │   Pydantic v2 models
+              │       Deploy · Data      │
+              └────────────┬─────────────┘
+                           │ compile
+                           ▼
+              ┌──────────────────────────┐
+              │   GraphCompiler →        │   topological order
+              │   ExecutionPlan          │   dry-run friendly
+              └────────────┬─────────────┘
+                           │ execute
+                           ▼
+   ┌───────────────────────┴───────────────────────────┐
+   │                    Provider                       │
+   ├───────────────────────────────────────────────────┤
+   │   Standalone(local=True)  ← v0.1 (local Docker;   │
+   │                             auto-fallback to       │
+   │                             in-process if no       │
+   │                             daemon)                │
+   │   AWS / GCP / Azure       ← v0.5+                 │
+   │   Multi-cloud + auto-router ← v1.0                │
+   └───────────────────────────────────────────────────┘
 ```
 
-### 📦 Importing and initializing Ophelian
+## Install
 
-To initialize `Ophelian` with Spark embedded session use:
+```bash
+pip install -e .                  # core framework
+pip install -e '.[sklearn]'       # add a specific framework adapter
+pip install -e '.[all,dev]'       # everything, including dev tooling
+```
+
+Requires Python 3.11 or 3.12.
+
+## Quickstart — sklearn (fully runnable)
+
+This is the canonical end-to-end example and is exercised by CI:
 
 ```python
-from ophelian.start import OphelianSession
-ophelian = OphelianSession("Spark App Name")
-sc = ophelian.Spark.build_spark_context()
-  ____          _            _  _               
- / __ \        | |          | |(_)              
-| |  | | _ __  | |__    ___ | | _   __ _  _ __  
-| |  | || '_ \ | '_ \  / _ \| || | / _` || '_ \ 
-| |__| || |_) || | | ||  __/| || || (_| || | | |
- \____/ | .__/ |_| |_| \___||_||_| \__,_||_| |_|
-        | |                                     
-        |_|                                     
-  ____         
- / __ \        
-| |  | | _ __  
-| |  | || '_ \ 
-| |__| || | | |
- \____/ |_| |_|       
-               
- __  __                    _ 
-|  \/  |                  | |
-| \  / |  __ _  _ __  ___ | |
-| |\/| | / _` || '__|/ __|| |
-| |  | || (_| || |   \__ \|_|
-|_|  |_| \__,_||_|   |___/(_)
+from ophelian import Data, Deploy, Pipeline, Standalone, Train
 
+pipe = Pipeline([
+    Data(name="ds", source="synthetic://iris"),
+    Train(
+        name="trainer",
+        framework="sklearn",
+        model="sklearn.linear_model.LogisticRegression",
+        data="ds",
+        hyperparameters={"max_iter": 200},
+    ),
+    Deploy(name="serve", model="trainer", port=8080),
+])
+
+if __name__ == "__main__":
+    result = pipe.run(env=Standalone(local=True))
+    print("Endpoint:", result.step("serve").info["predict"])
 ```
-Main class objects provided by initializing Ophelia session:
 
-- `read` & `write`
+Run it:
+
+```bash
+ophelian run examples/sklearn_pipeline.py
+```
+
+## Other frameworks
+
+The same `Pipeline` shape works with the other built-in adapters. They are all
+covered by save/load round-trip tests in CI; the snippets below assume you have
+the optional deps installed (`pip install -e '.[pytorch]'`, `'.[xgboost]'`,
+`'.[huggingface]'`).
+
+### XGBoost (tabular)
 
 ```python
-from ophelian.ophelian_spark.read.spark_read import Read
-from ophelian.ophelian_spark.write.spark_write import Write
+from ophelian import Data, Pipeline, Standalone, Train
+
+pipe = Pipeline([
+    Data(
+        name="ds",
+        source="inline://",
+        format="inline",
+        options={
+            "X": [[0, 0], [0, 1], [1, 0], [1, 1]],
+            "y": [0, 1, 1, 0],
+        },
+    ),
+    Train(
+        name="trainer",
+        framework="xgboost",
+        model="XGBClassifier",
+        data="ds",
+        hyperparameters={"max_depth": 3, "n_estimators": 30, "verbosity": 0},
+    ),
+])
+
+pipe.run(env=Standalone(local=True))
 ```
-- `generic` & `functions`
+
+### PyTorch (tabular regression)
+
+The PyTorch adapter accepts a fully-qualified class path and runs a small
+tabular training loop (MSE for float targets, cross-entropy for int targets):
 
 ```python
-from ophelian.ophelian_spark.functions import (
-  Shape, Rolling, Reshape, CorrMat, CrossTabular, 
-  PctChange, Selects, DynamicSampling
-)
-from ophelian.ophelian_spark.generic import (
-  split_date, row_index, lag_min_max_data, regex_expr, remove_duplicate_element,
-  year_array, dates_index, sorted_date_list, feature_pick, binary_search,
-  century_from_year, simple_average, delta_series, simple_moving_average, average,
-  weight_moving_average, single_exp_smooth, double_exp_smooth, initial_seasonal_components,
-  triple_exp_smooth, row_indexing, string_match
-)
+from ophelian import Data, Pipeline, Standalone, Train
+
+pipe = Pipeline([
+    Data(
+        name="ds",
+        source="inline://",
+        format="inline",
+        options={"X": [[1.0], [2.0], [3.0]], "y": [2.0, 4.0, 6.0]},
+    ),
+    Train(
+        name="trainer",
+        framework="pytorch",
+        model="torch.nn.Linear",
+        data="ds",
+        hyperparameters={"in_features": 1, "out_features": 1, "lr": 0.05},
+        epochs=200,
+    ),
+])
+
+pipe.run(env=Standalone(local=True))
 ```
-- ML package for `unsupervised`, `sampling` and `feature_miner` objects
+
+### HuggingFace
+
+The HuggingFace adapter is a thin wrapper around `transformers`. It is
+**network- and disk-heavy** (downloads model weights and tokenizers), so it is
+not exercised end-to-end in CI. With `transformers` installed it follows the
+same shape as the other adapters; pass a hub model id as `model=` and a
+`Dataset` (or a dict your tokenizer understands) as `data=`.
+
+## Dry-run a pipeline
+
+You can inspect the compiled plan without executing anything:
+
+```bash
+ophelian dry-run examples/sklearn_pipeline.py
+```
+
+Or programmatically:
 
 ```python
-from ophelian.ophelian_spark.ml.sampling.synthetic_sample import SyntheticSample
-from ophelian.ophelian_spark.ml.unsupervised.feature import PCAnalysis, SingularVD
-from ophelian.ophelian_spark.ml.feature_miner import (
-  BuildStringIndex, BuildOneHotEncoder, 
-  BuildVectorAssembler, BuildStandardScaler,
-  SparkToNumpy, NumpyToVector
-)
+pipe.dry_run()
 ```
 
-Let me show you some application examples:
+## CLI
 
-The `Read` class implements Spark reading object in multiple formats `{'csv', 'parquet', 'excel', 'json'}`
-
-```python
-from ophelian.ophelian_spark.read.spark_read import Read
-
-spark_df = spark.readFile(path, 'csv', header=True, infer_schema=True)
+```bash
+ophelian version
+ophelian dry-run path/to/pipeline.py
+ophelian run     path/to/pipeline.py
 ```
 
-Also, you may import class `Shape` from factory `functions` in order to see the dimension of our spark DataFrame such as numpy style.
+## Developer setup
 
-```python
-from ophelian.ophelian_spark.functions import Shape
-
-dic = {
-    'Product': ['A', 'B', 'C', 'A', 'B', 'C', 'A', 'B', 'C'],
-    'Year': [2010, 2010, 2010, 2011, 2011, 2011, 2012, 2012, 2012],
-    'Revenue': [100, 200, 300, 110, 190, 320, 120, 220, 350]
-}
-dic_to_df = spark.createDataFrame(pd.DataFrame(data=dic))
-dic_to_df.show(10, False)
-
-+---------+------------+-----------+
-| Product |    Year    |  Revenue  |
-+---------+------------+-----------+
-|    A    |    2010    |    100    |
-|    B    |    2010    |    200    |
-|    C    |    2010    |    300    |
-|    A    |    2011    |    110    |
-|    B    |    2011    |    190    |
-|    C    |    2011    |    320    |
-|    A    |    2012    |    120    |
-|    B    |    2012    |    220    |
-|    C    |    2012    |    350    |
-+---------+------------+-----------+
-
-dic_to_df.Shape
-(9, 3)
+```bash
+pip install -e '.[all,dev]'
+pre-commit install
+pytest
+ruff check .
+mypy ophelian
 ```
 
-The `pct_change` wrapper is added to the Spark `DataFrame` class in order to have the most commonly used method in Pandas
-objects to get the relative percentage change from one observation to another, sorted by a date-type column and lagged by a numeric-type column.
+CI runs lint (ruff), typecheck (mypy strict) and tests (pytest) on every PR
+across Python 3.11 and 3.12.
 
-```python
-from ophelian.ophelian_spark.functions import PctChange
+## Architecture at a glance
 
-dic_to_df.pctChange().show(10, False)
+| Subpackage              | Responsibility                                              |
+|-------------------------|-------------------------------------------------------------|
+| `ophelian.core`         | Declarative DSL nodes + graph compiler                      |
+| `ophelian.envs`         | Public env constructors (`Standalone(...)`)                 |
+| `ophelian.providers`    | Backend implementations (Standalone in-process today)       |
+| `ophelian.models`       | Framework adapters + plugin registry                        |
+| `ophelian.runtime`      | Inference runtimes (FastAPI today)                          |
+| `ophelian.stores`       | Artifact stores (local FS today, cloud later)               |
+| `ophelian.data`         | Data loaders (inline, synthetic, csv/json/jsonl/parquet)    |
+| `ophelian.cli`          | `ophelian` command                                          |
+| `ophelian.observability`| Logging surface (OTel later)                                |
 
-+---------------------+
-|       Revenue       |
-+---------------------+
-| null                |
-| 1.0                 |
-| 0.5                 |
-| -0.6333333333333333 |
-| 0.7272727272727273  |
-| 0.6842105263157894  |
-| -0.625              |
-| 0.8333333333333333  |
-| 0.5909090909090908  |
-+---------------------+
-```
+## Execution modes
 
-Another option is to configure all receiving parameters from the function, as follows:
-- `periods`; this parameter will control the offset of the lag periods. Since the default value is 1, this will always return a lag-1 information DataFrame.
-- `partition_by`; this parameter will fix the partition column over the DataFrame, e.g. 'bank_segment', 'assurance_product_type'.
-- `order_by`; order by parameter will be the specific column to order the sequential observations, e.g. 'balance_date', 'trade_close_date', 'contract_date'.
-- `pct_cols`; percentage change col (pct_cols) will be the specific column to lag-over giving back the relative change between one element to other, e.g. 𝑥𝑡 ÷ 𝑥𝑡 − 1
+The Standalone provider exposes two execution modes selected by the
+`container` argument:
 
-In this case, we will specify only the `periods` parameter to yield a lag of -2 days over the DataFrame.
-```python
-dic_to_df.pctChange(periods=2).na.fill(0).show(5, False)
+| `container=` | Behavior                                                                    |
+|--------------|-----------------------------------------------------------------------------|
+| `True`       | Force Docker. Each step runs in an `ophelian-runtime` container; `Deploy` runs detached with its port published. Raises if no daemon is reachable. |
+| `False`      | Force in-process. Useful in notebooks, on machines without Docker, and in tests where you want to assert against the produced FastAPI app via `TestClient`. |
+| `"auto"` (default) | Probe the daemon and pick `container` if reachable, otherwise `inprocess`. |
 
-+--------------------+
-|Revenue             |
-+--------------------+
-|0.0                 |
-|0.0                 |
-|2.0                 |
-|-0.44999999999999996|
-|-0.3666666666666667 |
-+--------------------+
-only showing top 5 rows
-```
+In container mode `result.step("serve").info` includes `container_id`,
+`host_port`, `container_port`, and the real `predict`/`health` URLs bound
+to the host. CI exercises this end-to-end: `tests/test_docker_integration.py`
+builds the runtime image, starts a real container, and `curl`s `/health`
+and `/predict` against the host port.
 
-Adding parameters: `partition_by`, `order_by` & `pct_cols`
-```python
-dic_to_df.pctChange(partition_by="Product", order_by="Year", pct_cols="Revenue").na.fill(0).show(5, False)
+## Status
 
-+---------------------+
-|Revenue              |
-+---------------------+
-|0.0                  |
-|-0.050000000000000044|
-|0.1578947368421053   |
-|0.0                  |
-|0.06666666666666665  |
-+---------------------+
-only showing top 5 rows
-```
+This is the **v0.1 foundation**. It establishes the API and architecture
+end-to-end on a single machine — in a real Docker container when a daemon
+is available, and in-process as a transparent fallback otherwise. The
+Standalone provider trains via the model adapters, persists artifacts to a
+local store, and serves `Deploy` steps as a real FastAPI app (mounted in
+your test client when in-process; running in a detached container with a
+published port when in Docker). The next milestones add real cloud
+execution (AWS first), spot/auto-scaling, multi-cloud and a cost-aware
+auto-router.
 
-You may also lag more than one column at a time by simply adding a list with string column names:
-```python
-dic_to_df.pctChange(partition_by="Product", order_by="Year", pct_cols=["Year", "Revenue"]).na.fill(0).show(5, False)
+## License
 
-+--------------------+---------------------+
-|Year                |Revenue              |
-+--------------------+---------------------+
-|0.0                 |0.0                  |
-|4.975124378110429E-4|-0.050000000000000044|
-|4.972650422674363E-4|0.1578947368421053   |
-|0.0                 |0.0                  |
-|4.975124378110429E-4|0.06666666666666665  |
-+--------------------+---------------------+
-only showing top 5 rows
-```
- 
-## 🤔 Contributing to Ophelian On Mars
-
-We welcome contributions from everyone! If you have an idea, a question, or if you've found a bug that needs fixing, please open an [issue ticket](https://github.com/LuisFalva/ophelian/issues).
-
-You can find guidelines for submitting an issue request in our repository. Additionally, you can refer to the [Open Source Contribution Guide best practices](https://opensource.guide/) to get started.
-
-## 📠 Support or Contact
-
-Having trouble with Ophelian? Yo can DM me at [falvaluis@gmail.com](https://mail.google.com/mail/u/0/?tab=rm&ogbl#inbox?compose=CllgCJZZQVJHBJKmdjtXgzlrRcRktFLwFQsvWKqcTRtvQTVcHvgTNSxVzjZqjvDFhZlVJlPKqtg) and I’ll help you sort it out.
-
-## 📃 License
-
-Released under the Apache License, version 2.0.
+Apache-2.0 — see `LICENSE`.

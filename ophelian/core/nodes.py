@@ -164,6 +164,7 @@ class StepResult(BaseModel):
     metrics: dict[str, float] = Field(default_factory=dict)
     info: dict[str, Any] = Field(default_factory=dict)
     error: str | None = None
+    duration_seconds: float | None = None
 
 
 class PipelineResult(BaseModel):

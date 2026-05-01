@@ -1,0 +1,84 @@
+site_name: Ophelian
+site_description: Declarative ML framework — write your pipeline once, run it anywhere.
+site_url: https://luisfalva.github.io/ophelia/
+repo_url: https://github.com/LuisFalva/ophelia
+repo_name: LuisFalva/ophelia
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.indexes
+    - content.code.copy
+    - content.code.annotate
+    - content.action.edit
+    - search.highlight
+    - search.share
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  icon:
+    repo: fontawesome/brands/github
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tasklist:
+      custom_checkbox: true
+
+plugins:
+  - search
+
+nav:
+  - Home: index.md
+  - Quickstart: quickstart.md
+  - Concepts: concepts.md
+  - Envs:
+      - Standalone: envs/standalone.md
+      - AWS: envs/aws.md
+      - GCP: envs/gcp.md
+      - Azure: envs/azure.md
+      - Auto: envs/auto.md
+  - Models: models.md
+  - Stores: stores.md
+  - CLI: cli.md
+  - Cookbook: cookbook.md
+  - Troubleshooting: troubleshooting.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/LuisFalva/ophelia
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/ophelian/

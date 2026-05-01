@@ -7,6 +7,100 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-05-01
+
+### Added — Multi-cloud parity
+
+- **`GCP(project=..., region=..., machine_type=..., gpu_type=..., preemptible=True)` env**
+  with `GCEDriver` (default) — same `Pipeline` source as AWS /
+  Standalone, no node changes. A `GKEDriver` is on the post-1.0
+  roadmap (the `gcp_backend='gke'` switch raises a clear
+  `NotImplementedError` today).
+- **`Azure(subscription_id=..., resource_group=..., region=..., vm_size=..., spot=True)` env**
+  with `AzureVMDriver` (default). An `AKSDriver` is on the post-1.0
+  roadmap (the `azure_backend='aks'` switch raises a clear
+  `NotImplementedError` today).
+- **GCS artifact store** (`ophelian.stores.gcs.GCSArtifactStore`) and
+  **Azure Blob artifact store**
+  (`ophelian.stores.azure_blob.AzureBlobArtifactStore`) sharing the
+  `ArtifactStore` Protocol with the existing local + S3 stores.
+- **Spot / preemptible parity.** GCP preemptible and Azure Spot VMs
+  reuse the existing `Checkpoint` / `SpotInterruption` machinery.
+  `step_runner` now uploads checkpoints to S3, GCS, or Azure Blob
+  depending on `OPHELIAN_ARTIFACT_BACKEND`.
+- **`Auto(cheapest_gpu="A100", regions=[...])` cost router.** Picks
+  the cheapest configured provider/region for the requested GPU and
+  returns a real provider you can pass straight to `pipeline.run(...)`.
+  `dry_run=True` prints the decision and returns a no-op provider so
+  CI can exercise the routing logic without provisioning anything.
+- **`ophelian.pricing`**: `PriceQuote`, `RouterDecision`,
+  `lookup_cheapest(gpu, regions, providers)`, JSON file cache with
+  TTL, and a hand-curated static fallback table for T4 / L4 / V100 /
+  A10G / A100 / H100 across the three clouds.
+- **Live pricing across all three clouds** (`fetch_live`, opt-in via
+  `allow_live=True`, on by default for `Auto`):
+  - **AWS** — `ec2.describe_spot_price_history` (free, public, needs
+    boto3 creds).
+  - **Azure** — public **Retail Prices API**
+    (`https://prices.azure.com/api/retail/prices`); no auth, no API
+    key required. Returns true on-demand and Spot prices.
+  - **GCP** — Cloud Billing Catalog API; opt-in via `GOOGLE_API_KEY`
+    env var. The catalog only exposes per-SKU prices, so we publish a
+    transparent *live GPU rate × `gpu_count` + static compute base*
+    aggregate. Without the key, GCP gracefully falls back to the
+    static table.
+  - All three share one 24 h on-disk cache
+    (`OPHELIAN_PRICING_CACHE_DIR`).
+
+### Added — Observability
+
+- **Structured JSON logging** (`ophelian.observability.configure_logging(json=True)`)
+  with a `run_id` `ContextVar` propagated through every step.
+- **Rich summary table** at the end of every `pipeline.run(...)`:
+  step name, env, instance, duration, cost estimate, status,
+  artifact URI.
+- Optional **OpenTelemetry** scaffolding via `emit_event(...)` —
+  no-ops when `opentelemetry` isn't installed.
+
+### Added — Demos, docs, community
+
+- Three viral demos under `examples/`: `llama_finetune.py`,
+  `resnet_train.py`, `xgboost_tabular.py`. All default to
+  `Auto(...)` and respect `OPHELIAN_DRY_RUN` for offline runs.
+- **mkdocs-material site** under `docs/` (`mkdocs.yml`) — Quickstart,
+  Concepts, one page per env, Models, Stores, CLI, Cookbook,
+  Troubleshooting. Auto-deployed to GitHub Pages from `main`.
+- Top-level `README.md` rewritten around the v1.0 hero, comparison
+  table, and the three demos.
+- `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, GitHub issue forms, PR
+  template.
+
+### Added — Packaging
+
+- New extras: `gcp`, `azure`, `pricing`, `docs`, `otel`, and `all`
+  (everything). The `gke` / `aks` extras are reserved for the
+  post-1.0 GKE / AKS drivers.
+- `release.yml` publishes to PyPI via OIDC Trusted Publishing on
+  `vX.Y.Z` tags.
+- `docs.yml` builds + deploys the docs site.
+- Third-party clouds plug in via the `ophelian.envs` entry-point
+  group (see `CONTRIBUTING.md`).
+
+### Changed
+
+- `from ophelian import AWS, GCP, Azure, Auto, Standalone` is now the
+  one true import surface for envs.
+- `step_runner` refactored: `_detect_backend` chooses the artifact
+  store from env vars, every persistence call (`_persist_artifacts_*`,
+  `_upload_checkpoint_*`, `_materialise_upstream_*`) has a multi-cloud
+  variant.
+
+### Deprecated
+
+- The S3-only helpers (`_persist_artifacts_to_s3`, etc.) still work
+  but are deprecated aliases over the multi-cloud variants. They will
+  be removed in 2.0.
+
 ## [0.5.0] - 2026-05-01
 
 ### Added — AWS provider

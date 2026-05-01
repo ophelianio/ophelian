@@ -77,3 +77,14 @@ class LocalArtifactStore:
 
     def uri(self, key: str) -> str:
         return (self._root / key).as_uri()
+
+    def put_bytes(self, key: str, payload: bytes) -> str:
+        destination = self.path_for(key)
+        destination.write_bytes(payload)
+        return self.uri(key)
+
+    def get_bytes(self, key: str) -> bytes:
+        path = self._root / key
+        if not path.exists() or path.is_dir():
+            raise FileNotFoundError(f"No artifact at {key}")
+        return path.read_bytes()

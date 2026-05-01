@@ -52,6 +52,7 @@ from ophelian.core.nodes import (
     Train,
     Tune,
 )
+from ophelian.observability import bind_run
 from ophelian.providers.base import Provider
 from ophelian.providers.docker_engine import (
     ContainerHandle,
@@ -227,6 +228,12 @@ class StandaloneProvider(Provider):
     # ------------------------------------------------------------------
 
     def execute(self, pipeline: Pipeline, plan: ExecutionPlan) -> PipelineResult:
+        with bind_run(getattr(self, "_run_id", None) or pipeline.name):
+            return self._execute_bound(pipeline, plan)
+
+    def _execute_bound(
+        self, pipeline: Pipeline, plan: ExecutionPlan
+    ) -> PipelineResult:
         # In container mode, pre-extend the runtime extras with whatever
         # frameworks the pipeline actually uses so the image we build can
         # `import` the relevant adapter dependencies.
@@ -234,22 +241,42 @@ class StandaloneProvider(Provider):
             self._extend_runtime_extras_from_plan(plan)
         results: list[StepResult] = []
         artifact_index: dict[str, dict[str, str]] = {}
-        for step in plan.steps:
+        try:
+            for step in plan.steps:
+                _step_t0 = time.monotonic()
+                try:
+                    step_result = self._execute_step(step, artifact_index)
+                except Exception as exc:
+                    logger.exception("Step %s failed", step.name)
+                    step_result = StepResult(
+                        name=step.name,
+                        kind=step.kind,
+                        status="failed",
+                        error=str(exc),
+                    )
+                if step_result.duration_seconds is None:
+                    step_result = step_result.model_copy(
+                        update={"duration_seconds": time.monotonic() - _step_t0}
+                    )
+                results.append(step_result)
+                artifact_index[step.name] = step_result.artifacts
+                if step_result.status == "failed":
+                    break
+            return PipelineResult(pipeline=pipeline.name, steps=results)
+        finally:
             try:
-                step_result = self._execute_step(step, artifact_index)
-            except Exception as exc:
-                logger.exception("Step %s failed", step.name)
-                step_result = StepResult(
-                    name=step.name,
-                    kind=step.kind,
-                    status="failed",
-                    error=str(exc),
+                from ophelian.observability.summary import emit_run_summary
+
+                emit_run_summary(
+                    provider=self.name,
+                    run_id=getattr(self, "_run_id", None) or pipeline.name,
+                    pipeline=pipeline.name,
+                    steps=results,
+                    description=f"standalone[{self._mode}]",
+                    hourly_usd=getattr(self, "_router_quote_hourly_usd", None),
                 )
-            results.append(step_result)
-            artifact_index[step.name] = step_result.artifacts
-            if step_result.status == "failed":
-                break
-        return PipelineResult(pipeline=pipeline.name, steps=results)
+            except Exception:  # pragma: no cover - summary is best-effort
+                logger.debug("Summary emission failed", exc_info=True)
 
     def _execute_step(
         self,

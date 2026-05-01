@@ -49,5 +49,13 @@ class ArtifactStore(Protocol):
         """Return the canonical URI for *key* (``file://``, ``s3://``, ...)."""
         ...
 
+    def put_bytes(self, key: str, payload: bytes) -> str:
+        """Upload an in-memory byte buffer to *key*; return the canonical URI."""
+        ...
+
+    def get_bytes(self, key: str) -> bytes:
+        """Read *key* into memory and return the raw bytes."""
+        ...
+
 
 __all__ = ["ArtifactStore"]

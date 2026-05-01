@@ -884,7 +884,14 @@ def _materialise_upstream(
     store: ArtifactStore,
     workspace: Path,
 ) -> dict[str, dict[str, str]]:
-    """Download S3-backed upstream artifacts into *workspace* and return local paths."""
+    """Download upstream artifacts into *workspace* and return local paths.
+
+    Supports the three artifact-store URI schemes Ophelian ships:
+    ``s3://`` (AWS), ``gs://`` (GCP), and ``az://`` (Azure Blob).
+    The function lives in ``aws_drivers`` for historical reasons and is
+    re-exported by the GCP / Azure driver modules so all three drivers
+    share one materialisation contract.
+    """
     out: dict[str, dict[str, str]] = {}
     for step_name, items in upstream.items():
         local_items: dict[str, str] = {}
@@ -892,10 +899,20 @@ def _materialise_upstream(
             if not isinstance(uri, str):
                 local_items[key] = uri
                 continue
+            full_key: str | None = None
             if uri.startswith("s3://"):
                 from ophelian.stores.s3 import parse_s3_uri
 
-                _bucket, full_key = parse_s3_uri(uri)
+                _, full_key = parse_s3_uri(uri)
+            elif uri.startswith("gs://"):
+                from ophelian.stores.gcs import parse_gs_uri
+
+                _, full_key = parse_gs_uri(uri)
+            elif uri.startswith("az://"):
+                from ophelian.stores.azure_blob import parse_az_uri
+
+                _, _, full_key = parse_az_uri(uri)
+            if full_key is not None:
                 store_key = _strip_store_prefix(store, full_key)
                 local_dst = workspace / "_upstream" / step_name / key
                 local_items[key] = str(store.get(store_key, local_dst))

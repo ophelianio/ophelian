@@ -152,6 +152,38 @@ def test_aws_factory_auto_provisions_default_bucket(aws_env: None) -> None:
 # ---------------------------------------------------------------------------
 
 
+def test_provider_binds_run_id_at_execute_entry(
+    aws_env: None, store: S3ArtifactStore
+) -> None:
+    """``provider.execute()`` must bind ``run_id`` so JSON logs emitted
+    by the provider itself (not just the in-subprocess step_runner)
+    carry the correlation key."""
+    import io
+
+    from ophelian.observability import configure_logging
+
+    captured = io.StringIO()
+    configure_logging(json=True, stream=captured, level="INFO")
+    try:
+        provider = AWSProvider(
+            config=AWSConfig(region="us-east-1", artifact_bucket=store.bucket),
+            driver=LocalDriver(),
+            store=store,
+        )
+        _make_pipeline().run(env=provider)
+        lines = [
+            json.loads(line)
+            for line in captured.getvalue().splitlines()
+            if line.strip()
+        ]
+        # The "Starting AWS run …" entry is emitted from inside execute().
+        starting = [r for r in lines if "Starting AWS run" in r["msg"]]
+        assert starting, "expected a 'Starting AWS run' record"
+        assert starting[0]["run_id"] == provider.run_id
+    finally:
+        configure_logging(json=False)
+
+
 def test_provider_runs_pipeline_with_local_driver(
     aws_env: None, store: S3ArtifactStore
 ) -> None:

@@ -1,0 +1,52 @@
+name: Feature request
+description: Propose a change or addition to Ophelian.
+title: "[feat] "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ophelian is small on purpose. The bar for new public API is
+        "this makes pipelines more portable, more honest, or more
+        pleasant to use across every supported env." If your idea
+        only helps on one cloud, please describe how it could be
+        opted into without changing the pipeline source.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: What hurts today? What workaround are you using?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Sketch the public API. A `Pipeline(...)` example is ideal.
+      render: python
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+    validations:
+      required: false
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - Core pipeline / nodes
+        - Env (AWS / GCP / Azure / Auto / Standalone)
+        - Stores
+        - Models / adapters
+        - CLI
+        - Docs / examples
+        - Other
+    validations:
+      required: true

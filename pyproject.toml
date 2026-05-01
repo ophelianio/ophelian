@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ophelian"
-version = "0.1.0"
-description = "Declarative ML framework: write a Pipeline once, run it anywhere — local Docker, cloud, multi-cloud."
+version = "1.0.0"
+description = "Declarative ML framework: write a Pipeline once, run it anywhere — local Docker, AWS, GCP, Azure, or routed to the cheapest cloud."
 readme = "README.md"
 license = { text = "Apache-2.0" }
 requires-python = ">=3.11"
@@ -14,7 +14,7 @@ authors = [
 ]
 keywords = ["ml", "mlops", "pipeline", "declarative", "docker", "fastapi"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: Apache Software License",
@@ -59,6 +59,40 @@ eks = [
     "botocore>=1.34",
     "kubernetes>=29.0",
 ]
+gcp = [
+    "google-cloud-storage>=2.18",
+    "google-cloud-compute>=1.19",
+    "google-auth>=2.30",
+]
+gke = [
+    "google-cloud-storage>=2.18",
+    "google-cloud-container>=2.49",
+    "kubernetes>=29.0",
+]
+azure = [
+    "azure-identity>=1.17",
+    "azure-mgmt-compute>=33.0",
+    "azure-mgmt-network>=25.4",
+    "azure-mgmt-resource>=23.1",
+    "azure-storage-blob>=12.20",
+]
+aks = [
+    "azure-identity>=1.17",
+    "azure-mgmt-containerservice>=31.0",
+    "azure-storage-blob>=12.20",
+    "kubernetes>=29.0",
+]
+pricing = []
+docs = [
+    "mkdocs>=1.6",
+    "mkdocs-material>=9.5",
+    "mkdocstrings[python]>=0.25",
+    "pymdown-extensions>=10.8",
+]
+otel = [
+    "opentelemetry-api>=1.25",
+    "opentelemetry-sdk>=1.25",
+]
 all = [
     "torch>=2.2",
     "transformers>=4.40",
@@ -69,6 +103,14 @@ all = [
     "botocore>=1.34",
     "paramiko>=3.4",
     "kubernetes>=29.0",
+    "google-cloud-storage>=2.18",
+    "google-cloud-compute>=1.19",
+    "google-auth>=2.30",
+    "azure-identity>=1.17",
+    "azure-mgmt-compute>=33.0",
+    "azure-mgmt-network>=25.4",
+    "azure-mgmt-resource>=23.1",
+    "azure-storage-blob>=12.20",
 ]
 dev = [
     "ruff>=0.6",
@@ -92,6 +134,11 @@ huggingface = "ophelian.models.huggingface_adapter:HuggingFaceAdapter"
 sklearn = "ophelian.models.sklearn_adapter:SklearnAdapter"
 xgboost = "ophelian.models.xgboost_adapter:XGBoostAdapter"
 
+# NOTE: Third-party clouds plug in via the ``ophelian.envs``
+# entry-point group; this package ships AWS / GCP / Azure / Auto /
+# Standalone directly. Community envs declare their own group in
+# their distribution's pyproject.toml — see CONTRIBUTING.md.
+
 [project.urls]
 Homepage = "https://github.com/LuisFalva/ophelia"
 Repository = "https://github.com/LuisFalva/ophelia"
@@ -109,8 +156,12 @@ include = [
     "/ophelian",
     "/tests",
     "/examples",
+    "/docs",
+    "/mkdocs.yml",
     "/README.md",
     "/CHANGELOG.md",
+    "/CONTRIBUTING.md",
+    "/CODE_OF_CONDUCT.md",
     "/LICENSE",
     "/pyproject.toml",
 ]
@@ -161,7 +212,14 @@ module = [
     "joblib",
     "pandas",
     "boto3",
+    "botocore.exceptions",
     "kubernetes",
+    "azure.identity",
+    "azure.mgmt.compute",
+    "azure.mgmt.network",
+    "azure.storage.blob",
+    "google.cloud",
+    "opentelemetry",
 ]
 ignore_missing_imports = true
 

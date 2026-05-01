@@ -105,7 +105,7 @@ def save_checkpoint(store: ArtifactStore, checkpoint: Checkpoint) -> str:
     payload = checkpoint.to_json().encode("utf-8")
     key = checkpoint_key(checkpoint.run_id)
     if hasattr(store, "put_bytes"):
-        return store.put_bytes(key, payload)  # type: ignore[no-any-return]
+        return store.put_bytes(key, payload)
     # Fallback for stores that only accept file paths.
     import tempfile
 

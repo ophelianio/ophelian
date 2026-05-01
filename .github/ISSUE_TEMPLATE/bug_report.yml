@@ -1,0 +1,79 @@
+name: Bug report
+description: Something in Ophelian is broken or behaves unexpectedly.
+title: "[bug] "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug. The single most useful thing you can do
+        is paste a **minimal reproducer** below — a `Pipeline(...)` that
+        fails locally on `Standalone(local=True)` is ideal.
+
+  - type: input
+    id: version
+    attributes:
+      label: Ophelian version
+      description: Output of `python -c "import ophelian; print(ophelian.__version__)"`
+      placeholder: "1.0.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: env
+    attributes:
+      label: Env
+      options:
+        - Standalone (local Docker)
+        - Standalone (in-process fallback)
+        - AWS (EC2)
+        - AWS (EKS)
+        - GCP (GCE)
+        - GCP (GKE)
+        - Azure (VM)
+        - Azure (AKS)
+        - Auto
+        - Other / not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproducer
+      description: A self-contained `Pipeline(...)` script.
+      render: python
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened
+      description: Full traceback if possible. JSON logs from `configure_logging(json=True)` are extra helpful.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+      placeholder: "3.12.3"
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: OS
+      placeholder: "macOS 14.5 / Ubuntu 24.04 / ..."
+    validations:
+      required: true

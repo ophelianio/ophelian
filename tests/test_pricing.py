@@ -125,11 +125,11 @@ def _disable_live_http(monkeypatch: pytest.MonkeyPatch) -> None:
     """Make every live fetcher return ``[]`` so the test exercises only
     the cache path. Azure's Retail Prices API is public/no-auth, so
     without this the live path would actually run during CI."""
-    from ophelian import pricing as _pricing
+    from ophelian.pricing import live as _live
 
-    monkeypatch.setattr(_pricing, "_fetch_aws_spot_quotes", lambda *a, **k: [])
-    monkeypatch.setattr(_pricing, "_fetch_azure_retail_quotes", lambda *a, **k: [])
-    monkeypatch.setattr(_pricing, "_fetch_gcp_billing_quotes", lambda *a, **k: [])
+    monkeypatch.setattr(_live, "_fetch_aws_spot_quotes", lambda *a, **k: [])
+    monkeypatch.setattr(_live, "_fetch_azure_retail_quotes", lambda *a, **k: [])
+    monkeypatch.setattr(_live, "_fetch_gcp_billing_quotes", lambda *a, **k: [])
 
 
 def test_fetch_live_ignores_stale_cache(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -255,10 +255,10 @@ def test_fetch_live_azure_retail_api_picks_spot_meter(
     monkeypatch.setenv("OPHELIAN_PRICING_CACHE_DIR", str(tmp_path / "cache.json"))
     # AWS + GCP are out of scope for this assertion; mute them so the
     # cache write only contains Azure quotes.
-    from ophelian import pricing as _pricing
+    from ophelian.pricing import live as _live
 
-    monkeypatch.setattr(_pricing, "_fetch_aws_spot_quotes", lambda *a, **k: [])
-    monkeypatch.setattr(_pricing, "_fetch_gcp_billing_quotes", lambda *a, **k: [])
+    monkeypatch.setattr(_live, "_fetch_aws_spot_quotes", lambda *a, **k: [])
+    monkeypatch.setattr(_live, "_fetch_gcp_billing_quotes", lambda *a, **k: [])
 
     def handler(url: str) -> dict[str, object]:
         assert "prices.azure.com/api/retail/prices" in url
@@ -315,10 +315,10 @@ def test_fetch_live_gcp_skipped_without_api_key(
     monkeypatch.setenv("OPHELIAN_PRICING_CACHE_DIR", str(tmp_path / "cache.json"))
     monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
     monkeypatch.delenv("GOOGLE_CLOUD_API_KEY", raising=False)
-    from ophelian import pricing as _pricing
+    from ophelian.pricing import live as _live
 
-    monkeypatch.setattr(_pricing, "_fetch_aws_spot_quotes", lambda *a, **k: [])
-    monkeypatch.setattr(_pricing, "_fetch_azure_retail_quotes", lambda *a, **k: [])
+    monkeypatch.setattr(_live, "_fetch_aws_spot_quotes", lambda *a, **k: [])
+    monkeypatch.setattr(_live, "_fetch_azure_retail_quotes", lambda *a, **k: [])
 
     quotes = fetch_live("A100", providers=["gcp"], regions=["us-central1"])
     assert quotes == []
@@ -332,10 +332,10 @@ def test_fetch_live_gcp_billing_catalog_overlays_live_gpu_rate(
     gpu_count + static_compute_base`` for every known instance."""
     monkeypatch.setenv("OPHELIAN_PRICING_CACHE_DIR", str(tmp_path / "cache.json"))
     monkeypatch.setenv("GOOGLE_API_KEY", "fake-test-key-do-not-use")
-    from ophelian import pricing as _pricing
+    from ophelian.pricing import live as _live
 
-    monkeypatch.setattr(_pricing, "_fetch_aws_spot_quotes", lambda *a, **k: [])
-    monkeypatch.setattr(_pricing, "_fetch_azure_retail_quotes", lambda *a, **k: [])
+    monkeypatch.setattr(_live, "_fetch_aws_spot_quotes", lambda *a, **k: [])
+    monkeypatch.setattr(_live, "_fetch_azure_retail_quotes", lambda *a, **k: [])
 
     def handler(url: str) -> dict[str, object]:
         assert "cloudbilling.googleapis.com" in url

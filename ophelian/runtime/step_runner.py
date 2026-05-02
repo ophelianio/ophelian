@@ -445,6 +445,11 @@ def run(spec_path: Path) -> int:
     )
     # Wrap the handler call in an OTel step span so cloud workers
     # contribute to the same trace shape as the in-process executor.
+    # We keep ``emit_metric=True`` (the default) here because this
+    # process owns the authoritative ``ophelian.step.duration`` sample
+    # for container/cloud-executed steps. Host-side container drivers
+    # must NOT also record one — see the cardinality contract on
+    # ``ophelian.observability.otel.step_span``.
     from ophelian.observability.otel import step_span
 
     step_name = (spec.get("node", {}) or {}).get("name") or kind

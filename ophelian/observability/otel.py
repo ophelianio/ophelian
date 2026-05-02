@@ -432,6 +432,18 @@ def step_span(
     :func:`record_step_outcome` (e.g. providers that derive status from
     ``StepResult.status`` rather than exception escape) MUST pass
     ``emit_metric=False`` to avoid double-counting.
+
+    Cardinality contract: exactly **one** ``ophelian.step.duration``
+    sample is recorded per step execution, on the side that owns the
+    handler. The in-process :class:`StandaloneProvider` owns it on the
+    host (via ``record_step_outcome``); the cloud worker owns it inside
+    the worker process (via this helper with the default
+    ``emit_metric=True``). Host-side container drivers must not also
+    emit a duration sample for container-executed steps — that would
+    double-count. Regression tests
+    ``test_step_metrics_emitted_exactly_once_per_step`` and
+    ``test_step_span_records_failed_duration_when_handler_raises``
+    pin both halves of the contract.
     """
     auto_configure_from_env()
     tracer = get_tracer()

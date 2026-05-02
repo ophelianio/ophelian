@@ -73,14 +73,22 @@ mypy --strict ophelian
 
 ## Documentation links
 
-The `Link check` workflow runs on any PR that touches `README.md`,
-top-level policy files (`CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`,
-`CHANGELOG.md`, `SECURITY.md`), or `docs/**/*.md`. It runs two jobs:
+The `Link check` workflow runs on every push and pull request (plus
+manual `workflow_dispatch`). It runs three jobs against `README.md`,
+the top-level policy files (`CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`,
+`CHANGELOG.md`, `SECURITY.md`) and `docs/**/*.md`:
 
 - **Internal links (fatal)** — `lychee --offline` verifies that every
   relative link points at a file that actually exists. A failure here
   blocks merge and almost always means a doc was renamed without
   updating callers. Fix the broken path or revert the rename.
+- **Doc anchors (fatal)** — `scripts/check_doc_anchors.py` verifies
+  every `#fragment` link (e.g. README TOC entries) resolves to a real
+  heading using the GitHub-Flavored-Markdown slug algorithm. Failure
+  means a heading was renamed but the in-doc link still points at the
+  old slug. We do this in a small Python script instead of via lychee
+  because lychee's slugger differs from GFM for headings containing
+  `&` (e.g. `Status & versioning` → `status--versioning`).
 - **External links (warn-only)** — real HTTP fetches against
   `http(s)` URLs. Marked `continue-on-error: true` so a flaky third-
   party server does not block your PR; the warning still surfaces in
@@ -94,6 +102,9 @@ To reproduce locally before pushing:
 # install lychee once: https://github.com/lycheeverse/lychee#installation
 lychee --offline README.md CONTRIBUTING.md CODE_OF_CONDUCT.md \
                  CHANGELOG.md SECURITY.md 'docs/**/*.md'
+
+# anchor checker uses only the Python stdlib
+python3 scripts/check_doc_anchors.py
 ```
 
 ## Adding a third-party env

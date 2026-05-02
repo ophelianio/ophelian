@@ -18,13 +18,17 @@ enough for the docs in this repo:
        existing dashes are preserved (so `Status & versioning`
        becomes `status--versioning`, not `status-versioning`)
 
-Limitations (all currently safe for this repo):
+Limitations (all currently safe for this repo — revisit if a doc
+starts using any of these patterns):
 
     - We do NOT implement GitHub's `-1`, `-2` suffix de-duplication
       for repeated headings. None of the scanned files have repeated
       headings today; if that changes, add a check here.
     - HTML headings inside markdown (`<h2>foo</h2>`) are ignored.
     - Footnote anchors (`[^1]`) are ignored — different namespace.
+    - Only inline `[text](#frag)` links are scanned; reference-style
+      links (`[text][ref]` plus a `[ref]: #frag` block elsewhere)
+      are not. The repo doesn't use them.
 
 Exit codes:
     0 — every #fragment link resolves

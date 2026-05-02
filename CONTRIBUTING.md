@@ -99,6 +99,31 @@ We cut releases by pushing a `vX.Y.Z` tag. The `release.yml` workflow
 takes care of the build + PyPI publish via OIDC Trusted Publishing.
 Don't push tags without a `CHANGELOG.md` entry.
 
+## Changes to `.github/` (workflows, Dependabot, CODEOWNERS)
+
+Anything under `.github/` is owned by the release maintainers via
+[`.github/CODEOWNERS`](.github/CODEOWNERS). That covers:
+
+- `.github/workflows/*.yml` — CI, release, docs, security, CodeQL
+- `.github/dependabot.yml` — the policy that keeps SHA-pinned actions
+  fresh
+- `.github/CODEOWNERS` itself
+
+Practical impact for contributors:
+
+- A PR that touches any of those paths will auto-request a review from
+  the code owner; please don't merge it yourself even if you have
+  write access.
+- We pin every GitHub Action to an immutable 40-char commit SHA for
+  supply-chain safety. If you bump an action manually (instead of
+  letting Dependabot do it), include both the new SHA *and* the
+  upstream tag as a trailing comment so the reviewer can verify it,
+  e.g. `uses: actions/checkout@<sha>  # v4.2.2`.
+- Workflow changes that add new `permissions:`, new `secrets.*`
+  references, or new `pull_request_target` triggers should call that
+  out explicitly in the PR description — those are the changes most
+  likely to need extra scrutiny.
+
 ## Code of Conduct
 
 By participating you agree to abide by the

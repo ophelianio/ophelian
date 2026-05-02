@@ -401,6 +401,35 @@ And to every contributor who has filed an issue, opened a PR,
 refreshed the price table, or kicked the tyres on a real cloud:
 **thank you.** Run `git shortlog -sn --no-merges` for the full list.
 
+Changes under `.github/` (CI workflows, `dependabot.yml`, `CODEOWNERS`)
+are owned by the release maintainers — see
+[`.github/CODEOWNERS`](.github/CODEOWNERS). Those PRs auto-request a
+maintainer review and should not be self-merged. See
+[CONTRIBUTING → Changes to `.github/`](CONTRIBUTING.md#changes-to-github-workflows-dependabot-codeowners)
+for what to call out in the PR description.
+
+### Maintainer setup: branch protection on `main` (one-time, manual)
+
+CODEOWNERS only *requests* reviews by default. To make them
+*required* — i.e. to actually block merges of workflow / Dependabot
+changes that haven't been approved by a maintainer — a repo admin
+needs to enable it in GitHub's UI; this can't be expressed in-repo.
+
+In **Settings → Branches → Branch protection rules** for `main`:
+
+1. **Require a pull request before merging** — on
+2. **Require approvals** — at least 1
+3. **Require review from Code Owners** — on (this is the key toggle;
+   without it, the `.github/CODEOWNERS` entries are advisory only)
+4. **Dismiss stale pull request approvals when new commits are pushed**
+   — on (so a force-push to a workflow PR re-triggers maintainer review)
+5. **Do not allow bypassing the above settings** — on, including for
+   admins, so the policy can't be silently sidestepped
+
+Once that's set, any PR touching `.github/workflows/`,
+`.github/dependabot.yml`, or `.github/CODEOWNERS` will be blocked from
+merging until a code owner approves it.
+
 ## License
 
 Copyright © 2024–2026 Luis Falva and the Ophelian contributors.

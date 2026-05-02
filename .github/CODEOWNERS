@@ -1,0 +1,35 @@
+# CODEOWNERS for ophelian
+#
+# This file designates required reviewers for security-sensitive paths.
+# GitHub uses it to auto-request reviews on pull requests, and — if
+# branch protection on `main` has "Require review from Code Owners"
+# enabled — to *block* merges of those PRs until a code owner approves.
+#
+# Why this matters for `.github/`:
+#   - `.github/workflows/*.yml` defines what runs in CI with repo
+#     secrets and OIDC trust (PyPI Trusted Publishing, GitHub Pages,
+#     etc.). A malicious or careless change here can exfiltrate
+#     credentials or publish a poisoned release.
+#   - `.github/dependabot.yml` controls which automated PRs Dependabot
+#     opens; weakening it (e.g. disabling the github-actions ecosystem)
+#     would silently let SHA-pinned actions rot.
+#   - We pin every action to an immutable 40-char commit SHA, but a pin
+#     is only as good as the human review of the bump PR. CODEOWNERS
+#     guarantees that human is the release maintainer.
+#
+# Syntax: <pattern> <owner> [<owner> ...]
+# Order matters — the *last* matching pattern wins for a given file.
+# See https://docs.github.com/en/repositories/managing-your-repositories-settings-and-security/customizing-your-repository/about-code-owners
+
+# Default owner for everything, so nothing is unowned.
+*                       @LuisFalva
+
+# Anything under .github/ — workflows, dependabot config, issue
+# templates, PR template — requires release-maintainer review.
+/.github/               @LuisFalva
+/.github/workflows/     @LuisFalva
+/.github/dependabot.yml @LuisFalva
+
+# CODEOWNERS itself: changes to the review policy must be reviewed by
+# the same people the policy currently protects.
+/.github/CODEOWNERS     @LuisFalva

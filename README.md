@@ -1,27 +1,28 @@
-<div align="center">
+<h1 align="center">Ophelian</h1>
 
-# Ophelian
-
-**Write your ML pipeline once. Run it anywhere. Pay the lowest GPU price on the market.**
+<p align="center">
+  <strong>Write your ML pipeline once. Run it anywhere. Pay the lowest GPU price on the market.</strong>
+</p>
 
 <!-- Status -->
+
 [![PyPI](https://img.shields.io/pypi/v/ophelian.svg)](https://pypi.org/project/ophelian/)
 [![Python](https://img.shields.io/pypi/pyversions/ophelian.svg)](https://pypi.org/project/ophelian/)
 [![Downloads](https://static.pepy.tech/badge/ophelian/month)](https://pepy.tech/project/ophelian)
 [![License](https://img.shields.io/pypi/l/ophelian.svg)](LICENSE)
 
 <!-- Quality -->
+
 [![CI](https://github.com/LuisFalva/ophelian/actions/workflows/ci.yml/badge.svg)](https://github.com/LuisFalva/ophelian/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/LuisFalva/ophelian/actions/workflows/codeql.yml/badge.svg)](https://github.com/LuisFalva/ophelian/actions/workflows/codeql.yml)
 [![Security](https://github.com/LuisFalva/ophelian/actions/workflows/security.yml/badge.svg)](https://github.com/LuisFalva/ophelian/actions/workflows/security.yml)
 [![Docs](https://github.com/LuisFalva/ophelian/actions/workflows/docs.yml/badge.svg)](https://luisfalva.github.io/ophelian/)
 
 <!-- Community -->
+
 [![Code of Conduct](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
 [![Discussions](https://img.shields.io/github/discussions/LuisFalva/ophelian)](https://github.com/LuisFalva/ophelian/discussions)
 [![Issues](https://img.shields.io/github/issues/LuisFalva/ophelian)](https://github.com/LuisFalva/ophelian/issues)
-
-</div>
 
 ---
 

@@ -153,6 +153,21 @@ class SpotInterruptionMonitor:
         try:
             if probe():
                 self._triggered = True
+                # Lifecycle: spot_interruption_received — emitted on
+                # the rising 0→1 edge so subscribers fire exactly
+                # once per interruption, even if ``check()`` is
+                # polled in a loop.
+                try:
+                    from ophelian.observability.events import (
+                        SpotInterruptionReceived,
+                        emit as emit_lifecycle,
+                    )
+
+                    emit_lifecycle(
+                        SpotInterruptionReceived(source="spot.monitor")
+                    )
+                except Exception:  # pragma: no cover - defensive
+                    pass
                 return True
         except Exception as exc:  # pragma: no cover - defensive
             logger.debug("spot probe error: %s", exc)

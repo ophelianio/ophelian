@@ -194,6 +194,14 @@ class Pipeline(BaseModel):
     name: str = Field(default_factory=lambda: f"pipeline-{uuid4().hex[:8]}")
     steps: tuple[Node, ...]
     description: str | None = None
+    context: dict[str, Any] | None = None
+    """Opaque dict propagated to every lifecycle event emitted during
+    this pipeline's run. Multi-tenant callers stash ``tenant_id`` and
+    similar labels here so subscribers can route handlers without
+    additional plumbing. The cost ledger task also reads from this
+    dict to attribute spend rows. ``None`` (the default) means the
+    field is simply absent from emitted events.
+    """
 
     def __init__(self, steps: Sequence[Node] | None = None, **data: Any) -> None:
         if steps is not None and "steps" not in data:
@@ -224,6 +232,11 @@ class Pipeline(BaseModel):
     ) -> PipelineResult:
         """Compile the pipeline and execute it on the given provider."""
         from ophelian.core.compiler import GraphCompiler
+        from ophelian.observability.events import (
+            PipelineCompleted,
+            PipelineStarted,
+            emit as emit_lifecycle,
+        )
         from ophelian.observability.otel import (
             ATTR_RUN_ID,
             ATTR_STATUS,
@@ -258,14 +271,41 @@ class Pipeline(BaseModel):
                 region=str(region) if region is not None else None,
                 emit_metric=False,
             ) as span:
-                result = env.execute(self, plan)
-                status = "success" if result.succeeded else "failed"
-                if span is not None and hasattr(span, "set_attribute"):
-                    final_run_id = getattr(env, "_run_id", None)
-                    if final_run_id:
-                        span.set_attribute(ATTR_RUN_ID, str(final_run_id))
-                    span.set_attribute(ATTR_STATUS, status)
-                return result
+                # Lifecycle: pipeline_started — fired INSIDE the
+                # pipeline span so the OTel mirror lands on it.
+                emit_lifecycle(
+                    PipelineStarted(
+                        source=self.name,
+                        run_id=str(getattr(env, "_run_id", None) or ""),
+                        context=self.context,
+                        pipeline=self.name,
+                        provider=provider_name,
+                        env_class=env_class,
+                    )
+                )
+                try:
+                    result = env.execute(self, plan)
+                    status = "success" if result.succeeded else "failed"
+                    if span is not None and hasattr(span, "set_attribute"):
+                        final_run_id = getattr(env, "_run_id", None)
+                        if final_run_id:
+                            span.set_attribute(ATTR_RUN_ID, str(final_run_id))
+                        span.set_attribute(ATTR_STATUS, status)
+                    return result
+                finally:
+                    # Lifecycle: pipeline_completed — fired in finally
+                    # so it runs on both success and exception paths,
+                    # while still inside the pipeline span.
+                    emit_lifecycle(
+                        PipelineCompleted(
+                            source=self.name,
+                            run_id=str(getattr(env, "_run_id", None) or ""),
+                            context=self.context,
+                            pipeline=self.name,
+                            provider=provider_name,
+                            status=status,
+                        )
+                    )
         finally:
             record_pipeline_outcome(
                 pipeline_name=self.name,

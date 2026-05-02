@@ -450,24 +450,88 @@ def run(spec_path: Path) -> int:
     # for container/cloud-executed steps. Host-side container drivers
     # must NOT also record one — see the cardinality contract on
     # ``ophelian.observability.otel.step_span``.
+    from ophelian.observability.events import (
+        StepCompleted,
+        StepFailed,
+        StepStarted,
+        emit as emit_lifecycle,
+    )
     from ophelian.observability.otel import step_span
 
     step_name = (spec.get("node", {}) or {}).get("name") or kind
+    # Forward-compatible: the cloud drivers will start populating
+    # ``spec["context"]`` when the cost ledger task lands; until then
+    # workers emit step events without a context dict.
+    step_context = spec.get("context") if isinstance(spec.get("context"), dict) else None
     step_ctx = step_span(
         step_name=step_name,
         step_kind=kind,
         run_id=run_id,
         provider="standalone-runtime",
     )
+    import time as _time
+
+    _t0 = _time.monotonic()
     with step_ctx:
-        result = _dispatch_handler(
-            provider=provider,
-            kind=kind,
-            node=node,
-            work_dir=work_dir,
-            artifacts=artifacts,
-            resume_from=resume_from,
+        emit_lifecycle(
+            StepStarted(
+                source=step_name,
+                run_id=run_id,
+                context=step_context,
+                step_name=step_name,
+                step_kind=kind,
+                provider="standalone-runtime",
+            )
         )
+        try:
+            result = _dispatch_handler(
+                provider=provider,
+                kind=kind,
+                node=node,
+                work_dir=work_dir,
+                artifacts=artifacts,
+                resume_from=resume_from,
+            )
+        except Exception as exc:
+            emit_lifecycle(
+                StepFailed(
+                    source=step_name,
+                    run_id=run_id,
+                    context=step_context,
+                    step_name=step_name,
+                    step_kind=kind,
+                    provider="standalone-runtime",
+                    duration_seconds=_time.monotonic() - _t0,
+                    error=str(exc),
+                )
+            )
+            raise
+        if result.status == "failed":
+            emit_lifecycle(
+                StepFailed(
+                    source=step_name,
+                    run_id=run_id,
+                    context=step_context,
+                    step_name=step_name,
+                    step_kind=kind,
+                    provider="standalone-runtime",
+                    duration_seconds=_time.monotonic() - _t0,
+                    error=result.error or "unknown",
+                )
+            )
+        else:
+            emit_lifecycle(
+                StepCompleted(
+                    source=step_name,
+                    run_id=run_id,
+                    context=step_context,
+                    step_name=step_name,
+                    step_kind=kind,
+                    provider="standalone-runtime",
+                    duration_seconds=_time.monotonic() - _t0,
+                    status=result.status,
+                )
+            )
 
     # Push artifacts to whatever cloud store is configured so
     # downstream steps running on fresh workers can fetch them.

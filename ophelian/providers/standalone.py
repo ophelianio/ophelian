@@ -237,6 +237,12 @@ class StandaloneProvider(Provider):
         # `import` the relevant adapter dependencies.
         if self._mode == "container":
             self._extend_runtime_extras_from_plan(plan)
+        from ophelian.observability.events import (
+            StepCompleted,
+            StepFailed,
+            StepStarted,
+            emit as emit_lifecycle,
+        )
         from ophelian.observability.otel import (
             ATTR_STATUS,
             record_step_outcome,
@@ -246,6 +252,9 @@ class StandaloneProvider(Provider):
         results: list[StepResult] = []
         artifact_index: dict[str, dict[str, str]] = {}
         run_id_for_span = getattr(self, "_run_id", None) or pipeline.name
+        # Propagate the pipeline's opaque context dict through every
+        # emitted step event so subscribers see consistent labels.
+        pipeline_context = getattr(pipeline, "context", None)
         try:
             for step in plan.steps:
                 _step_t0 = time.monotonic()
@@ -262,6 +271,18 @@ class StandaloneProvider(Provider):
                     provider=self.name,
                     emit_metric=False,
                 ) as _otel_step_span:
+                    # Lifecycle: step_started — inside the step span
+                    # so the OTel mirror attaches to it.
+                    emit_lifecycle(
+                        StepStarted(
+                            source=step.name,
+                            run_id=str(run_id_for_span),
+                            context=pipeline_context,
+                            step_name=step.name,
+                            step_kind=step.kind,
+                            provider=self.name,
+                        )
+                    )
                     try:
                         step_result = self._execute_step(step, artifact_index)
                     except Exception as exc:
@@ -282,10 +303,38 @@ class StandaloneProvider(Provider):
                         _otel_step_span.set_attribute(
                             ATTR_STATUS, step_result.status
                         )
-                if step_result.duration_seconds is None:
-                    step_result = step_result.model_copy(
-                        update={"duration_seconds": time.monotonic() - _step_t0}
-                    )
+                    if step_result.duration_seconds is None:
+                        step_result = step_result.model_copy(
+                            update={"duration_seconds": time.monotonic() - _step_t0}
+                        )
+                    # Lifecycle: step_completed / step_failed — emitted
+                    # before the step span closes so OTel can mirror.
+                    if step_result.status == "failed":
+                        emit_lifecycle(
+                            StepFailed(
+                                source=step.name,
+                                run_id=str(run_id_for_span),
+                                context=pipeline_context,
+                                step_name=step.name,
+                                step_kind=step.kind,
+                                provider=self.name,
+                                duration_seconds=step_result.duration_seconds,
+                                error=step_result.error or "unknown",
+                            )
+                        )
+                    else:
+                        emit_lifecycle(
+                            StepCompleted(
+                                source=step.name,
+                                run_id=str(run_id_for_span),
+                                context=pipeline_context,
+                                step_name=step.name,
+                                step_kind=step.kind,
+                                provider=self.name,
+                                duration_seconds=step_result.duration_seconds or 0.0,
+                                status=step_result.status,
+                            )
+                        )
                 # Authoritative metric emission (step_span suppressed
                 # its built-in emission via ``emit_metric=False``).
                 record_step_outcome(

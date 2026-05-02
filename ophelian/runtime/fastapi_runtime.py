@@ -34,6 +34,12 @@ from fastapi import FastAPI, Request, Response
 
 from ophelian.models import registry
 from ophelian.models.base import ModelAdapter
+from ophelian.observability.events import (
+    InferenceFailed,
+    ModelLoaded,
+    ModelUnloaded,
+    emit as emit_lifecycle,
+)
 from ophelian.observability.otel import (
     ATTR_FRAMEWORK,
     extract_token_usage,
@@ -98,7 +104,7 @@ def _install_otel_middleware(app: FastAPI, *, framework: str) -> None:
         with serve_request_span(method=method, route=route, framework=framework) as span:
             try:
                 response: Response = await call_next(request)
-            except Exception:
+            except Exception as exc:
                 self_duration = time.monotonic() - started
                 record_serve_outcome(
                     method=method,
@@ -109,6 +115,18 @@ def _install_otel_middleware(app: FastAPI, *, framework: str) -> None:
                     inference_duration_seconds=getattr(
                         request.state, "inference_duration_s", None
                     ),
+                )
+                # Lifecycle: inference_failed — emitted INSIDE the
+                # serve span so OTel mirroring lands on the same
+                # request trace consumers already see.
+                emit_lifecycle(
+                    InferenceFailed(
+                        source=f"fastapi:{framework}",
+                        framework=framework,
+                        route=route,
+                        method=method,
+                        error=repr(exc),
+                    )
                 )
                 serve_inflight_dec(method=method, route=route)
                 with state["lock"]:
@@ -192,7 +210,30 @@ def build_app(
     adapter_cls = registry.get(framework)
     adapter: ModelAdapter = adapter_cls()
     model = adapter.load(Path(model_path))
+    # Lifecycle: model_loaded — fires once per app construction so
+    # external systems (auto-rollback, audit trails) see the
+    # transition without log scraping.
+    emit_lifecycle(
+        ModelLoaded(
+            source=f"fastapi:{framework}",
+            framework=framework,
+            model_path=str(model_path),
+        )
+    )
     app = FastAPI(title=f"ophelian-inference[{framework}]", version="0.1.0")
+
+    def _on_shutdown() -> None:
+        # Lifecycle: model_unloaded — fires when the FastAPI app
+        # shuts down (TestClient.__exit__, uvicorn graceful stop).
+        emit_lifecycle(
+            ModelUnloaded(
+                source=f"fastapi:{framework}",
+                framework=framework,
+                model_path=str(model_path),
+            )
+        )
+
+    app.add_event_handler("shutdown", _on_shutdown)
     if enable_prometheus:
         # Mounting ``/metrics`` is only half the story — the route
         # serves whatever lives in ``prometheus_client.REGISTRY``, and

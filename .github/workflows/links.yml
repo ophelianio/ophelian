@@ -1,55 +1,25 @@
 name: Link check
 
 # Markdown link checker for README, top-level policy files, and the
-# mkdocs source under docs/. Runs on every push and PR that touches
-# documentation, plus manual dispatch. NO cron schedule by policy
-# (see comment in security.yml for context).
+# mkdocs source under docs/. Runs on every push and PR plus manual
+# dispatch. NO cron schedule by policy (see comment in security.yml).
 #
-# Two jobs:
-#   1. internal — `lychee --offline` verifies that every relative
-#      link points at a file that exists in the repo. Failures here
-#      block merge: a broken sibling link means a doc was renamed or
-#      deleted without updating callers.
-#   2. external — real HTTP fetches against http(s) URLs in the same
-#      docs. `continue-on-error: true` so flaky third-party servers
-#      don't block PRs; the warning still shows up in the checks
-#      summary so a reviewer can investigate.
-#
-# Anchor (`#fragment`) verification is intentionally OFF: lychee
-# uses a different heading-slug algorithm than GitHub Flavored
-# Markdown for headings containing `&`, which would generate false
-# positives on this repo's TOC entries.
+# Three jobs:
+#   1. internal  — `lychee --offline` verifies every relative link
+#      points at a file that exists. Fatal.
+#   2. anchors   — Python step verifies every `#fragment` link
+#      resolves to a real heading using the GitHub Flavored
+#      Markdown slug algorithm. Fatal. (We do this here instead of
+#      via `lychee --include-fragments` because lychee's slugger
+#      differs from GFM for headings containing `&`, e.g.
+#      `Status & versioning` → `status--versioning`, which would
+#      false-positive against this repo's TOC.)
+#   3. external  — real HTTP fetches; `continue-on-error: true` so
+#      flaky third-party servers don't block PRs. Warn-only.
 
 on:
   push:
-    paths:
-      # Markdown sources we promise to keep clean.
-      - 'README.md'
-      - 'CONTRIBUTING.md'
-      - 'CODE_OF_CONDUCT.md'
-      - 'CHANGELOG.md'
-      - 'SECURITY.md'
-      - 'docs/**/*.md'
-      # Non-markdown assets that the docs above link to. If any of
-      # these are renamed or deleted, the job needs to re-run so a
-      # broken `<img src=...>` or `[example](examples/foo)` is caught.
-      - 'docs/assets/**'
-      - 'examples/**'
-      # The job's own configuration.
-      - 'lychee.toml'
-      - '.github/workflows/links.yml'
   pull_request:
-    paths:
-      - 'README.md'
-      - 'CONTRIBUTING.md'
-      - 'CODE_OF_CONDUCT.md'
-      - 'CHANGELOG.md'
-      - 'SECURITY.md'
-      - 'docs/**/*.md'
-      - 'docs/assets/**'
-      - 'examples/**'
-      - 'lychee.toml'
-      - '.github/workflows/links.yml'
   workflow_dispatch:
 
 concurrency:
@@ -90,6 +60,28 @@ jobs:
             'docs/**/*.md'
           fail: true
           format: detailed
+
+  # ---------------------------------------------------------------
+  # anchors — GFM-compatible heading-anchor verification (fatal).
+  #
+  # See header comment for why we don't reuse `lychee
+  # --include-fragments` here. The script lives at
+  # `scripts/check_doc_anchors.py` and uses only the Python stdlib,
+  # so no `pip install` step is needed.
+  # ---------------------------------------------------------------
+  anchors:
+    name: Doc anchors (fatal)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5
+        with:
+          python-version: '3.12'
+
+      - name: Verify GFM heading anchors
+        run: python3 scripts/check_doc_anchors.py
 
   # ---------------------------------------------------------------
   # external — real HTTP fetches (warn-only).

@@ -101,7 +101,12 @@ Register your env factory in your distribution's `pyproject.toml`:
 RunPod = "my_pkg.envs:RunPod"
 ```
 
-Once installed, `from ophelian.envs import discover_plugin_envs;
-discover_plugin_envs()["RunPod"](...)` returns your env, and `Auto`
-will consider it during the price race if you pass it explicitly via
-`Auto(..., providers=("aws", "runpod"))`.
+Once installed:
+
+```python
+from ophelian.envs import discover_plugin_envs
+discover_plugin_envs()["RunPod"](...)
+```
+
+returns your env, and `Auto` will consider it during the price race if
+you pass it explicitly via `Auto(..., providers=("aws", "runpod"))`.

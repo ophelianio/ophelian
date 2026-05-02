@@ -1,0 +1,125 @@
+name: Link check
+
+# Markdown link checker for README, top-level policy files, and the
+# mkdocs source under docs/. Runs on every push and PR that touches
+# documentation, plus manual dispatch. NO cron schedule by policy
+# (see comment in security.yml for context).
+#
+# Two jobs:
+#   1. internal — `lychee --offline` verifies that every relative
+#      link points at a file that exists in the repo. Failures here
+#      block merge: a broken sibling link means a doc was renamed or
+#      deleted without updating callers.
+#   2. external — real HTTP fetches against http(s) URLs in the same
+#      docs. `continue-on-error: true` so flaky third-party servers
+#      don't block PRs; the warning still shows up in the checks
+#      summary so a reviewer can investigate.
+#
+# Anchor (`#fragment`) verification is intentionally OFF: lychee
+# uses a different heading-slug algorithm than GitHub Flavored
+# Markdown for headings containing `&`, which would generate false
+# positives on this repo's TOC entries.
+
+on:
+  push:
+    paths:
+      # Markdown sources we promise to keep clean.
+      - 'README.md'
+      - 'CONTRIBUTING.md'
+      - 'CODE_OF_CONDUCT.md'
+      - 'CHANGELOG.md'
+      - 'SECURITY.md'
+      - 'docs/**/*.md'
+      # Non-markdown assets that the docs above link to. If any of
+      # these are renamed or deleted, the job needs to re-run so a
+      # broken `<img src=...>` or `[example](examples/foo)` is caught.
+      - 'docs/assets/**'
+      - 'examples/**'
+      # The job's own configuration.
+      - 'lychee.toml'
+      - '.github/workflows/links.yml'
+  pull_request:
+    paths:
+      - 'README.md'
+      - 'CONTRIBUTING.md'
+      - 'CODE_OF_CONDUCT.md'
+      - 'CHANGELOG.md'
+      - 'SECURITY.md'
+      - 'docs/**/*.md'
+      - 'docs/assets/**'
+      - 'examples/**'
+      - 'lychee.toml'
+      - '.github/workflows/links.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: links-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # ---------------------------------------------------------------
+  # internal — relative-path link existence (offline, fatal).
+  # ---------------------------------------------------------------
+  internal:
+    name: Internal links (fatal)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+      - name: Lychee (offline, internal links)
+        uses: lycheeverse/lychee-action@8646ba30535128ac92d33dfc9133794bfdd9b411  # v2.8.0
+        with:
+          # --offline       : skip all network requests; only verify
+          #                   that relative paths resolve on disk.
+          # --no-progress   : keep CI logs clean.
+          # The file globs match exactly the docs surface area we
+          # promise to keep clean (README + policy files + mkdocs
+          # source). Test fixtures, examples/, and node_modules-like
+          # directories are deliberately excluded.
+          args: >-
+            --offline
+            --no-progress
+            'README.md'
+            'CONTRIBUTING.md'
+            'CODE_OF_CONDUCT.md'
+            'CHANGELOG.md'
+            'SECURITY.md'
+            'docs/**/*.md'
+          fail: true
+          format: detailed
+
+  # ---------------------------------------------------------------
+  # external — real HTTP fetches (warn-only).
+  # ---------------------------------------------------------------
+  external:
+    name: External links (warn-only)
+    runs-on: ubuntu-latest
+    # Soft-fail: a transient 503 from pypi.org or a flaky badge
+    # service should never block a doc PR. The warning is still
+    # visible in the PR's checks list and surfaces in the Actions
+    # tab for triage.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+      - name: Lychee (external links)
+        uses: lycheeverse/lychee-action@8646ba30535128ac92d33dfc9133794bfdd9b411  # v2.8.0
+        with:
+          # --scheme http(s) : ignore mailto:, ftp:, file:, etc.
+          # All other knobs (retries, timeout, accept list, cache)
+          # come from lychee.toml at the repo root.
+          args: >-
+            --no-progress
+            --scheme https
+            --scheme http
+            'README.md'
+            'CONTRIBUTING.md'
+            'CODE_OF_CONDUCT.md'
+            'CHANGELOG.md'
+            'SECURITY.md'
+            'docs/**/*.md'
+          fail: true
+          format: detailed

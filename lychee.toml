@@ -1,0 +1,39 @@
+# Shared lychee link-checker configuration for the
+# `.github/workflows/links.yml` jobs (internal + external).
+# Reference: https://github.com/lycheeverse/lychee
+
+# --- Network behavior ----------------------------------------------
+# Generous retries so transient rate limits don't fail PRs.
+max_retries        = 3
+retry_wait_time    = 5
+timeout            = 20
+max_concurrency    = 8
+
+# Accept these HTTP status codes as "link is alive".
+# 403 and 429 are intentionally permissive: GitHub, npm, and a few
+# CDNs sometimes return them to anonymous CI traffic. The internal
+# job (`--offline`) does not perform HTTP at all; this list applies
+# only to the external job.
+accept = ["200..=299", "301", "302", "307", "308", "403", "429"]
+
+# --- Cache ---------------------------------------------------------
+# Cache successful results for one day so re-runs of the same PR
+# don't hammer external servers.
+cache         = true
+max_cache_age = "1d"
+
+# --- Ignore list ---------------------------------------------------
+# Project-specific URL exclusions. Keep this short and document
+# *why* each entry is here. Currently empty — populate only when a
+# link is intentionally unreachable from CI (e.g. private
+# dashboards, auth-walled URLs, time-windowed redirects).
+exclude = [
+  # Example:
+  # "^https://internal\\.example\\.com",
+]
+
+# --- Misc ----------------------------------------------------------
+# Don't fail on `mailto:` links or local loopback URLs (these are
+# never useful to check from CI).
+exclude_mail     = true
+exclude_loopback = true

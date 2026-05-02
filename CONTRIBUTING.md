@@ -71,6 +71,31 @@ ruff check ophelian tests
 mypy --strict ophelian
 ```
 
+## Documentation links
+
+The `Link check` workflow runs on any PR that touches `README.md`,
+top-level policy files (`CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`,
+`CHANGELOG.md`, `SECURITY.md`), or `docs/**/*.md`. It runs two jobs:
+
+- **Internal links (fatal)** — `lychee --offline` verifies that every
+  relative link points at a file that actually exists. A failure here
+  blocks merge and almost always means a doc was renamed without
+  updating callers. Fix the broken path or revert the rename.
+- **External links (warn-only)** — real HTTP fetches against
+  `http(s)` URLs. Marked `continue-on-error: true` so a flaky third-
+  party server does not block your PR; the warning still surfaces in
+  the checks list. If the failing URL is intentionally unreachable
+  from CI (private dashboard, auth wall), add it to the `exclude =
+  [...]` list in `lychee.toml` with a comment explaining why.
+
+To reproduce locally before pushing:
+
+```bash
+# install lychee once: https://github.com/lycheeverse/lychee#installation
+lychee --offline README.md CONTRIBUTING.md CODE_OF_CONDUCT.md \
+                 CHANGELOG.md SECURITY.md 'docs/**/*.md'
+```
+
 ## Adding a third-party env
 
 Community envs (on-prem k8s, Lambda Labs, RunPod, ...) plug in via the

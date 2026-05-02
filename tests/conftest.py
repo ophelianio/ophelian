@@ -38,7 +38,21 @@ def _otel_in_memory_providers() -> Iterator[dict[str, Any]]:
     tracer_provider = TracerProvider()
     tracer_provider.add_span_processor(SimpleSpanProcessor(span_exporter))
     metric_reader = InMemoryMetricReader()
-    meter_provider = MeterProvider(metric_readers=[metric_reader])
+    # Also attach a Prometheus reader so the ``/metrics`` endpoint
+    # exposed by ``build_app(enable_prometheus=True)`` can be tested
+    # end-to-end (Ophelian metric → MeterProvider → Prometheus
+    # registry → ``/metrics`` text). The reader writes into the
+    # global ``prometheus_client.REGISTRY``; gating its install on
+    # import availability keeps the fixture working when the
+    # optional ``[otel]`` Prometheus extras are absent.
+    readers: list[Any] = [metric_reader]
+    try:
+        from opentelemetry.exporter.prometheus import PrometheusMetricReader
+
+        readers.append(PrometheusMetricReader())
+    except ImportError:
+        pass
+    meter_provider = MeterProvider(metric_readers=readers)
     trace.set_tracer_provider(tracer_provider)
     metrics.set_meter_provider(meter_provider)
     _reset_auto_configuration_for_tests()

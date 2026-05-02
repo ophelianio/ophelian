@@ -375,8 +375,18 @@ def test_metrics_endpoint_404_when_prometheus_disabled(tmp_path: Path) -> None:
         assert client.get("/metrics").status_code == 404
 
 
-def test_metrics_endpoint_serves_prometheus_text_when_enabled(tmp_path: Path) -> None:
+def test_metrics_endpoint_serves_prometheus_text_when_enabled(
+    otel: dict[str, Any], tmp_path: Path
+) -> None:
+    """Full integration: Ophelian metric → OTel MeterProvider →
+    PrometheusMetricReader → prometheus_client.REGISTRY → ``/metrics``.
+
+    The session-scoped conftest attaches a ``PrometheusMetricReader``
+    to the meter provider precisely so this test can prove the bridge
+    is wired correctly end-to-end.
+    """
     pytest.importorskip("prometheus_client")
+    pytest.importorskip("opentelemetry.exporter.prometheus")
     from ophelian.runtime.fastapi_runtime import build_app
 
     app = build_app(
@@ -385,16 +395,38 @@ def test_metrics_endpoint_serves_prometheus_text_when_enabled(tmp_path: Path) ->
         enable_prometheus=True,
     )
     with TestClient(app) as client:
-        # Drive at least one request so something is in the registry.
-        client.post("/predict", json={"inputs": [[1.0]]})
+        # Drive at least one request so something has been recorded.
+        assert client.post("/predict", json={"inputs": [[1.0]]}).status_code == 200
         response = client.get("/metrics")
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("text/plain")
     body = response.text
-    # We can't assert specific Ophelian metric names here because the
-    # in-memory test fixture owns the meter provider — the
-    # ``PrometheusMetricReader`` would need its own provider to
-    # populate the registry. What we CAN (and must) assert is that
-    # the endpoint serves a valid Prometheus text exposition (one of
-    # the standard process metrics is always present).
     assert "# HELP" in body and "# TYPE" in body
+    # OTel sanitises ``ophelian.serve.requests`` into
+    # ``ophelian_serve_requests`` for Prometheus; counters get a
+    # ``_total`` suffix per Prometheus conventions. We accept either
+    # to stay resilient to upstream naming policy tweaks.
+    assert (
+        "ophelian_serve_requests" in body or "ophelian_serve_latency" in body
+    ), body[:2000]
+
+
+def test_queue_depth_observer_reports_registered_value(
+    otel: dict[str, Any], tmp_path: Path
+) -> None:
+    """`register_queue_depth_observer` must wire a callback that the
+    OTel meter polls on each collection cycle, populating
+    ``ophelian.serve.queue.depth`` with the current value."""
+    del tmp_path
+    from ophelian.observability.otel import (
+        METRIC_SERVE_QUEUE_DEPTH,
+        register_queue_depth_observer,
+    )
+
+    state = {"depth": 7}
+    register_queue_depth_observer(lambda: state["depth"], route="/predict")
+
+    points = _metric_points(otel["metrics"], METRIC_SERVE_QUEUE_DEPTH)
+    predict = [p for p in points if p.attributes.get("http.route") == "/predict"]
+    assert predict, [p.attributes for p in points]
+    assert predict[-1].value == 7

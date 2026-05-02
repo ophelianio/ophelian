@@ -193,6 +193,21 @@ def build_app(
     adapter: ModelAdapter = adapter_cls()
     model = adapter.load(Path(model_path))
     app = FastAPI(title=f"ophelian-inference[{framework}]", version="0.1.0")
+    if enable_prometheus:
+        # Mounting ``/metrics`` is only half the story — the route
+        # serves whatever lives in ``prometheus_client.REGISTRY``, and
+        # OTel meter samples only land there when a
+        # ``PrometheusMetricReader`` is attached to the active meter
+        # provider. Force that wiring by setting the env var BEFORE
+        # the first metric singleton is created (which lazily triggers
+        # ``auto_configure_from_env``). When a meter provider has
+        # already been installed externally (e.g. tests, or a host
+        # process that pre-configured OTel), the reader must be
+        # registered there too — see ``tests/conftest.py``.
+        os.environ.setdefault("OPHELIAN_OTEL_PROMETHEUS", "1")
+        from ophelian.observability.otel import auto_configure_from_env
+
+        auto_configure_from_env()
     _install_otel_middleware(app, framework=framework)
     if enable_prometheus:
         _maybe_install_prometheus(app)

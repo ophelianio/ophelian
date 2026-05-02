@@ -84,6 +84,7 @@ nav:
   - Cookbook: cookbook.md
   - Troubleshooting: troubleshooting.md
   - Security: security.md
+  - Changelog: changelog.md
 
 extra:
   social:

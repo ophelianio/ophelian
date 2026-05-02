@@ -238,12 +238,33 @@ def _otel_safe(value: Any) -> Any:
     return repr(value)
 
 
+from ophelian.observability.otel import (  # noqa: E402  (circular-safe; otel.py does not import from us)
+    auto_configure_from_env as auto_configure_otel,
+)
+from ophelian.observability.otel import (  # noqa: E402
+    is_otel_available,
+    pipeline_span,
+    record_pipeline_outcome,
+    record_serve_outcome,
+    record_step_outcome,
+    serve_request_span,
+    step_span,
+)
+
 __all__ = [
     "JSONFormatter",
+    "auto_configure_otel",
     "bind_run",
     "configure_logging",
     "emit_event",
     "get_run_id",
+    "is_otel_available",
     "logger",
+    "pipeline_span",
+    "record_pipeline_outcome",
+    "record_serve_outcome",
+    "record_step_outcome",
+    "serve_request_span",
     "set_run_id",
+    "step_span",
 ]

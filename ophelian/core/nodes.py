@@ -224,12 +224,54 @@ class Pipeline(BaseModel):
     ) -> PipelineResult:
         """Compile the pipeline and execute it on the given provider."""
         from ophelian.core.compiler import GraphCompiler
+        from ophelian.observability.otel import (
+            ATTR_RUN_ID,
+            ATTR_STATUS,
+            pipeline_span,
+            record_pipeline_outcome,
+        )
 
         plan = GraphCompiler().compile(self)
         if dry_run:
             plan.render()
             return PipelineResult(pipeline=self.name)
-        return env.execute(self, plan)
+
+        env_class = getattr(env, "name", "unknown") or "unknown"
+        provider_name = env_class
+        region = (
+            getattr(env, "_region", None)
+            or getattr(getattr(env, "_config", None), "region", None)
+            or getattr(getattr(env, "_config", None), "location", None)
+            or "local"
+        )
+        # We open the span ourselves but suppress its built-in metric
+        # emission; we want the ``ophelian.pipeline.runs`` counter
+        # tagged with the authoritative ``PipelineResult.succeeded``
+        # rather than mere exception-escape semantics.
+        status: str = "failed"
+        try:
+            with pipeline_span(
+                pipeline_name=self.name,
+                run_id=getattr(env, "_run_id", None),
+                env_class=env_class,
+                provider=provider_name,
+                region=str(region) if region is not None else None,
+                emit_metric=False,
+            ) as span:
+                result = env.execute(self, plan)
+                status = "success" if result.succeeded else "failed"
+                if span is not None and hasattr(span, "set_attribute"):
+                    final_run_id = getattr(env, "_run_id", None)
+                    if final_run_id:
+                        span.set_attribute(ATTR_RUN_ID, str(final_run_id))
+                    span.set_attribute(ATTR_STATUS, status)
+                return result
+        finally:
+            record_pipeline_outcome(
+                pipeline_name=self.name,
+                status=status,
+                provider=provider_name,
+            )
 
     def dry_run(self) -> None:
         """Pretty-print the execution plan without running anything."""

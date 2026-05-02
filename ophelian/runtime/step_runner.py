@@ -443,24 +443,26 @@ def run(spec_path: Path) -> int:
         workspace=work_dir,
         container=False,
     )
-    if kind == "data":
-        result = provider._handle_data(node, work_dir)
-    elif kind == "train":
-        result = provider._handle_train(node, work_dir, artifacts, resume_from=resume_from)
-    elif kind == "tune":
-        result = provider._handle_tune(node, work_dir, artifacts)
-    elif kind == "eval":
-        result = provider._handle_eval(node, work_dir, artifacts)
-    elif kind == "deploy":
-        # Build the FastAPI app + descriptor and emit a result.json
-        # describing how to serve it. The caller (e.g. the EC2 user-data
-        # script, or the local Standalone container entrypoint) is then
-        # responsible for actually launching uvicorn against the
-        # descriptor — this keeps step_runner side-effect-free and lets
-        # the cloud driver pick the right host/port to advertise.
-        result = provider._handle_deploy(node, work_dir, artifacts)
-    else:
-        raise ValueError(f"Unknown step kind: {kind!r}")
+    # Wrap the handler call in an OTel step span so cloud workers
+    # contribute to the same trace shape as the in-process executor.
+    from ophelian.observability.otel import step_span
+
+    step_name = (spec.get("node", {}) or {}).get("name") or kind
+    step_ctx = step_span(
+        step_name=step_name,
+        step_kind=kind,
+        run_id=run_id,
+        provider="standalone-runtime",
+    )
+    with step_ctx:
+        result = _dispatch_handler(
+            provider=provider,
+            kind=kind,
+            node=node,
+            work_dir=work_dir,
+            artifacts=artifacts,
+            resume_from=resume_from,
+        )
 
     # Push artifacts to whatever cloud store is configured so
     # downstream steps running on fresh workers can fetch them.
@@ -480,6 +482,37 @@ def run(spec_path: Path) -> int:
     }
     (work_dir / "result.json").write_text(json.dumps(payload, default=str))
     return 0 if result.status == "success" else 1
+
+
+def _dispatch_handler(
+    *,
+    provider: Any,
+    kind: str,
+    node: Any,
+    work_dir: Path,
+    artifacts: dict[str, dict[str, str]],
+    resume_from: Path | None,
+) -> Any:
+    """Route a step kind to the matching standalone in-process handler.
+
+    The deploy path is not actually side-effectful here — it builds
+    the FastAPI app + descriptor and emits a result that the caller
+    (e.g. the EC2 user-data script or the local Standalone container
+    entrypoint) is responsible for launching uvicorn against. Keeping
+    step_runner side-effect-free lets the cloud driver pick the right
+    host/port to advertise.
+    """
+    if kind == "data":
+        return provider._handle_data(node, work_dir)
+    if kind == "train":
+        return provider._handle_train(node, work_dir, artifacts, resume_from=resume_from)
+    if kind == "tune":
+        return provider._handle_tune(node, work_dir, artifacts)
+    if kind == "eval":
+        return provider._handle_eval(node, work_dir, artifacts)
+    if kind == "deploy":
+        return provider._handle_deploy(node, work_dir, artifacts)
+    raise ValueError(f"Unknown step kind: {kind!r}")
 
 
 def main(argv: list[str] | None = None) -> int:

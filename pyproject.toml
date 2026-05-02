@@ -87,6 +87,12 @@ docs = [
 otel = [
     "opentelemetry-api>=1.25",
     "opentelemetry-sdk>=1.25",
+    # OTLP-over-HTTP exporters so auto_configure_otel() can wire up
+    # spans + metrics with zero extra installs the moment a user sets
+    # OTEL_EXPORTER_OTLP_ENDPOINT. We pick the proto-http variant
+    # because it has fewer transitive deps than gRPC and works through
+    # most corporate proxies.
+    "opentelemetry-exporter-otlp-proto-http>=1.25",
 ]
 all = [
     "torch>=2.2",
@@ -223,7 +229,8 @@ module = [
     "azure.mgmt.network",
     "azure.storage.blob",
     "google.cloud",
-    "opentelemetry",
+    "opentelemetry.exporter.otlp.proto.http.trace_exporter",
+    "opentelemetry.exporter.otlp.proto.http.metric_exporter",
 ]
 ignore_missing_imports = true
 

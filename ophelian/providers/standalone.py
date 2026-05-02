@@ -237,25 +237,63 @@ class StandaloneProvider(Provider):
         # `import` the relevant adapter dependencies.
         if self._mode == "container":
             self._extend_runtime_extras_from_plan(plan)
+        from ophelian.observability.otel import (
+            ATTR_STATUS,
+            record_step_outcome,
+            step_span,
+        )
+
         results: list[StepResult] = []
         artifact_index: dict[str, dict[str, str]] = {}
+        run_id_for_span = getattr(self, "_run_id", None) or pipeline.name
         try:
             for step in plan.steps:
                 _step_t0 = time.monotonic()
-                try:
-                    step_result = self._execute_step(step, artifact_index)
-                except Exception as exc:
-                    logger.exception("Step %s failed", step.name)
-                    step_result = StepResult(
-                        name=step.name,
-                        kind=step.kind,
-                        status="failed",
-                        error=str(exc),
-                    )
+                # We open the step span ourselves but suppress its
+                # built-in metric emission (record_step_outcome is
+                # called manually below) because we want the metric
+                # tagged with the actual StepResult.status — including
+                # the case where the handler raised but we converted
+                # it into a failed StepResult rather than re-raising.
+                with step_span(
+                    step_name=step.name,
+                    step_kind=step.kind,
+                    run_id=str(run_id_for_span),
+                    provider=self.name,
+                    emit_metric=False,
+                ) as _otel_step_span:
+                    try:
+                        step_result = self._execute_step(step, artifact_index)
+                    except Exception as exc:
+                        logger.exception("Step %s failed", step.name)
+                        step_result = StepResult(
+                            name=step.name,
+                            kind=step.kind,
+                            status="failed",
+                            error=str(exc),
+                        )
+                    # Stamp the authoritative ``StepResult.status`` on
+                    # the span before it closes so downstream traces
+                    # reflect handler-converted failures, not just
+                    # exception-escape semantics.
+                    if _otel_step_span is not None and hasattr(
+                        _otel_step_span, "set_attribute"
+                    ):
+                        _otel_step_span.set_attribute(
+                            ATTR_STATUS, step_result.status
+                        )
                 if step_result.duration_seconds is None:
                     step_result = step_result.model_copy(
                         update={"duration_seconds": time.monotonic() - _step_t0}
                     )
+                # Authoritative metric emission (step_span suppressed
+                # its built-in emission via ``emit_metric=False``).
+                record_step_outcome(
+                    step_name=step.name,
+                    step_kind=step.kind,
+                    status=step_result.status,
+                    duration_seconds=step_result.duration_seconds or 0.0,
+                )
                 results.append(step_result)
                 artifact_index[step.name] = step_result.artifacts
                 if step_result.status == "failed":

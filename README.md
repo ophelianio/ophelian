@@ -204,23 +204,24 @@ rich table summary you can paste into a Slack thread.
 
 ## Compatibility
 
-Tested in CI on every push:
+Combined matrix (Python × OS × provider). Cell values:
+**`full`** — gated by CI on every push ·
+**`community`** — works, exercised by contributors but not gated by CI ·
+**`planned`** — on the roadmap, not shipped yet ·
+**`n/a`** — does not apply.
 
-| Python | Linux (Ubuntu) | macOS | Windows |
-|:------:|:--------------:|:-----:|:-------:|
-| 3.11   | ✅ full         | community | community |
-| 3.12   | ✅ full         | ✅ full | community |
-| 3.13   | ✅ full         | community | community |
+| Runtime               | Standalone | AWS (EC2 / EKS) | GCP (GCE) | Azure (VM) | Auto router |
+|---|:---:|:---:|:---:|:---:|:---:|
+| **Linux (Ubuntu) · Python 3.11** | full | full | full | full | full |
+| **Linux (Ubuntu) · Python 3.12** | full | full | full | full | full |
+| **Linux (Ubuntu) · Python 3.13** | full | full | full | full | full |
+| **macOS · Python 3.12**          | full | full | full | full | full |
+| **macOS · Python 3.11 / 3.13**   | community | community | community | community | community |
+| **Windows · any Python 3.11+**   | community | community | community | community | community |
 
-Cloud provider support:
-
-| Provider | Compute | Artifact store | Spot / preemptible | Status |
-|---|---|---|:---:|:---:|
-| **Standalone** | local Docker / in-process | local FS | n/a | ✅ stable |
-| **AWS** | EC2 (default), EKS (`[eks]` extra) | S3 | ✅ EC2 spot | ✅ stable |
-| **GCP** | GCE | GCS | ✅ preemptible | ✅ stable (GKE planned) |
-| **Azure** | Azure VM | Azure Blob | ✅ Azure Spot | ✅ stable (AKS planned) |
-| **Auto router** | picks any of the above | inherits from chosen provider | ✅ | ✅ stable |
+GKE (`gcp_backend='gke'`) and AKS (`azure_backend='aks'`) are
+**planned** for the post-1.0 roadmap and currently raise a clear
+`NotImplementedError`.
 
 Third-party clouds plug in through the `ophelian.envs` entry-point
 group — see [`CONTRIBUTING.md`](CONTRIBUTING.md).
@@ -312,13 +313,37 @@ Please **do not** report security vulnerabilities via public GitHub
 issues. We take security seriously and want a chance to ship a fix
 before the bug is public.
 
-- See [`SECURITY.md`](SECURITY.md) for the full disclosure policy
-  (coverage, supported versions, expected response time).
-- Coordinated disclosure is preferred. Patched releases ship with
-  a `Security Advisory` published on the GitHub repo.
-- The CI pipeline runs **CodeQL**, **pip-audit**, and **gitleaks**
-  on every push; GitHub Actions are pinned to commit SHAs and
-  Dependabot watches for supply-chain regressions.
+**How to report (in order of preference):**
+
+1. **GitHub Private Vulnerability Reporting** — open
+   <https://github.com/LuisFalva/ophelian/security/advisories/new>
+   ("Report a vulnerability" button on the repo's Security tab).
+   This is the recommended channel: end-to-end private, no email
+   round-trip, and triaged automatically into a GitHub Security
+   Advisory if accepted.
+2. **Direct contact with the maintainer** — until a dedicated
+   `SECURITY.md` is published (planned, tracked separately), reach
+   out privately to the maintainer
+   [@LuisFalva](https://github.com/LuisFalva) via GitHub
+   (Profile → "..." → *Block or report* is **not** the right channel;
+   use the GitHub message form or the email listed on the maintainer's
+   public profile). Expect an acknowledgement within **5 business
+   days**.
+
+A future [`SECURITY.md`](SECURITY.md) will codify the full
+disclosure policy: in-scope components, supported versions, expected
+response timeline, and the embargo / credit process. Patched releases
+ship with a GitHub Security Advisory.
+
+**CI guardrails** (defense in depth, not a substitute for reports):
+
+- **CodeQL** — deep static analysis on every push to `main` and on
+  every PR, plus a weekly cron.
+- **pip-audit** + **bandit** + **gitleaks** — run on every push to
+  any branch and on every PR, plus a weekly cron so new CVEs surface
+  even when the repo is quiet.
+- **GitHub Actions pinned to commit SHAs** with Dependabot watching
+  for supply-chain regressions.
 
 ## Contributing
 
@@ -344,12 +369,17 @@ reports), please cite the specific version you used:
   version   = {1.0.0},
   license   = {Apache-2.0},
   url       = {https://github.com/LuisFalva/ophelian},
+  howpublished = {PyPI: \url{https://pypi.org/project/ophelian/}},
   publisher = {GitHub},
 }
 ```
 
-For other versions, swap `version` and check the matching tag at
-<https://github.com/LuisFalva/ophelian/releases>.
+Both URLs matter: the GitHub repo is the canonical source and issue
+tracker, and the PyPI page is the immutable artifact archive that
+reproducibility tooling resolves against. For other versions, swap
+`version` and check the matching tag at
+<https://github.com/LuisFalva/ophelian/releases> (and the matching
+release on <https://pypi.org/project/ophelian/#history>).
 
 ## Acknowledgments
 

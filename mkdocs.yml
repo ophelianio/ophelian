@@ -1,8 +1,8 @@
 site_name: Ophelian
 site_description: Declarative ML framework — write your pipeline once, run it anywhere.
-site_url: https://luisfalva.github.io/ophelian/
-repo_url: https://github.com/LuisFalva/ophelian
-repo_name: LuisFalva/ophelian
+site_url: https://ophelian.io/
+repo_url: https://github.com/ophelianio/ophelian
+repo_name: ophelianio/ophelian
 edit_uri: edit/main/docs/
 
 theme:

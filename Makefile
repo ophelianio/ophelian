@@ -1,33 +1,33 @@
 # ============================================================================
-# Ophelian — Makefile de limpieza
+# Ophelian — cleanup Makefile
 #
-# Targets enfocados *exclusivamente* en quitar basura y caches del repo.
-# Cada target es atómico (`make clean-test`, `make clean-build`, ...) y
-# `clean` agrupa el set que usás día a día. `distclean` borra TODO.
+# Targets focused *exclusively* on removing garbage and caches from the repo.
+# Each target is atomic (`make clean-test`, `make clean-build`, ...) and
+# `clean` groups the set you use day to day. `distclean` removes EVERYTHING.
 #
-# Convenciones:
-#   - Nada toca .git/, .github/, attached_assets/ ni el código fuente.
-#   - Los `find` usan -prune para no descender dentro de paquetes
-#     instalados (numpy, sklearn, ...) ni dentro de .git.
-#   - Las recetas usan TAB (requisito de Make); las continuaciones de
-#     variables y .PHONY usan espacios.
-#   - Para borrar archivos usamos `-exec rm -f {} +` en vez de `-delete`
-#     porque `-delete` activa `-depth` implícito, que rompe `-prune`.
+# Conventions:
+#   - Nothing touches .git/, .github/, attached_assets/ or the source code.
+#   - The `find` calls use -prune so they do not descend into installed
+#     packages (numpy, sklearn, ...) nor into .git.
+#   - Recipes use TAB indentation (Make requirement); variable continuations
+#     and .PHONY use spaces.
+#   - We use `-exec rm -f {} +` instead of `-delete` because `-delete`
+#     implicitly enables `-depth`, which breaks `-prune`.
 # ============================================================================
 
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 
-# Directorios que find debe ignorar SIEMPRE. Si faltara alguno, el find
-# descendería dentro de paquetes instalados y borraría su __pycache__.
-#   .git           -> estado de git
-#   .venv          -> entorno virtual estándar (uv / venv)
-#   .pythonlibs    -> site-packages que usa el sandbox de Replit
-#   node_modules   -> por si conviven con un sub-proyecto JS
-#   .cache         -> caches del sistema (incluye pre-commit envs)
-#   .uv-cache      -> cache local de uv (cubierto por clean-uv opt-in)
-#   .local         -> metadatos internos del agente / harness
-#   attached_assets-> archivos del usuario, intocables
+# Directories that find must ALWAYS ignore. If any of these were missing,
+# find would descend into installed packages and wipe their __pycache__.
+#   .git           -> git state
+#   .venv          -> standard virtualenv (uv / venv)
+#   .pythonlibs    -> site-packages used by the Replit sandbox
+#   node_modules   -> in case a JS sub-project lives alongside
+#   .cache         -> system-level caches (includes pre-commit envs)
+#   .uv-cache      -> local uv cache (covered by the opt-in clean-uv)
+#   .local         -> internal agent / harness metadata
+#   attached_assets-> user files, do not touch
 PRUNE := \
     -path ./.git -o \
     -path ./.venv -o \
@@ -41,77 +41,77 @@ PRUNE := \
 .PHONY: help clean clean-pyc clean-test clean-lint clean-build clean-docs \
         clean-uv clean-precommit clean-venv distclean
 
-help:  ## Muestra esta ayuda.
-	@echo "Ophelian — limpieza del repo"
+help:  ## Show this help.
+	@echo "Ophelian — repo cleanup"
 	@echo ""
-	@echo "Uso: make <target>"
+	@echo "Usage: make <target>"
 	@echo ""
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
 		| awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
 	@echo ""
 
 # ---------------------------------------------------------------------------
-# Target principal del día a día. NO toca venv ni cache de uv.
+# Day-to-day target. Does NOT touch venv or the uv cache.
 # ---------------------------------------------------------------------------
-clean: clean-pyc clean-test clean-lint clean-build clean-docs  ## Limpieza estándar (pyc + tests + lint + build + docs).
-	@echo "✓ Repo limpio (venv y caches de uv preservados)."
+clean: clean-pyc clean-test clean-lint clean-build clean-docs  ## Standard cleanup (pyc + tests + lint + build + docs).
+	@echo "✓ Repo clean (venv and uv caches preserved)."
 
 # ---------------------------------------------------------------------------
-# Bytecode de Python — siempre seguro de borrar.
+# Python bytecode — always safe to remove.
 # ---------------------------------------------------------------------------
-clean-pyc:  ## Borra __pycache__/, *.pyc, *.pyo, *.pyd recursivamente.
-	@echo "→ Borrando bytecode de Python..."
+clean-pyc:  ## Remove __pycache__/, *.pyc, *.pyo, *.pyd recursively.
+	@echo "→ Removing Python bytecode..."
 	@find . \( $(PRUNE) \) -prune -o -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true
 	@find . \( $(PRUNE) \) -prune -o -type f \( -name '*.pyc' -o -name '*.pyo' -o -name '*.pyd' \) -exec rm -f {} + 2>/dev/null || true
 
 # ---------------------------------------------------------------------------
-# Caches y reportes de pytest / cobertura.
+# pytest / coverage caches and reports.
 # ---------------------------------------------------------------------------
-clean-test:  ## Borra .pytest_cache, .coverage, coverage.xml, htmlcov/.
-	@echo "→ Borrando artefactos de tests y cobertura..."
+clean-test:  ## Remove .pytest_cache, .coverage, coverage.xml, htmlcov/.
+	@echo "→ Removing test and coverage artifacts..."
 	@find . \( $(PRUNE) \) -prune -o -type d -name '.pytest_cache' -exec rm -rf {} + 2>/dev/null || true
 	@rm -rf htmlcov coverage.xml .coverage .coverage.*
 
 # ---------------------------------------------------------------------------
-# Caches de los linters/typecheckers (ruff, mypy).
+# Linter / typechecker caches (ruff, mypy).
 # ---------------------------------------------------------------------------
-clean-lint:  ## Borra .ruff_cache/ y .mypy_cache/.
-	@echo "→ Borrando caches de ruff y mypy..."
+clean-lint:  ## Remove .ruff_cache/ and .mypy_cache/.
+	@echo "→ Removing ruff and mypy caches..."
 	@find . \( $(PRUNE) \) -prune -o -type d \( -name '.ruff_cache' -o -name '.mypy_cache' \) -exec rm -rf {} + 2>/dev/null || true
 
 # ---------------------------------------------------------------------------
-# Artifacts de packaging.
+# Packaging artifacts.
 # ---------------------------------------------------------------------------
-clean-build:  ## Borra dist/, build/, *.egg-info/.
-	@echo "→ Borrando artefactos de build..."
+clean-build:  ## Remove dist/, build/, *.egg-info/.
+	@echo "→ Removing build artifacts..."
 	@rm -rf dist build
 	@find . \( $(PRUNE) \) -prune -o -type d -name '*.egg-info' -exec rm -rf {} + 2>/dev/null || true
 
 # ---------------------------------------------------------------------------
-# Salida estática de mkdocs.
+# Static mkdocs output.
 # ---------------------------------------------------------------------------
-clean-docs:  ## Borra site/ (output de mkdocs build).
-	@echo "→ Borrando docs renderizadas..."
+clean-docs:  ## Remove site/ (mkdocs build output).
+	@echo "→ Removing rendered docs..."
 	@rm -rf site
 
 # ---------------------------------------------------------------------------
-# Caches "caros" — opt-in. No los incluyas en `clean` salvo que sepas
-# que querés pagar el costo de recrearlos.
+# "Expensive" caches — opt-in. Do not include in `clean` unless you know
+# you want to pay the cost of recreating them.
 # ---------------------------------------------------------------------------
-clean-precommit:  ## Borra .cache/pre-commit/ (entornos de hooks).
-	@echo "→ Borrando entornos cacheados de pre-commit..."
+clean-precommit:  ## Remove .cache/pre-commit/ (cached hook environments).
+	@echo "→ Removing cached pre-commit environments..."
 	@rm -rf .cache/pre-commit
 
-clean-uv:  ## Borra el cache local de uv (./.uv-cache si existe).
-	@echo "→ Borrando cache local de uv..."
+clean-uv:  ## Remove the local uv cache (./.uv-cache if present).
+	@echo "→ Removing local uv cache..."
 	@rm -rf .uv-cache
 
-clean-venv:  ## Borra el entorno virtual .venv/ (lo recreás con `uv sync`).
-	@echo "→ Borrando .venv/..."
+clean-venv:  ## Remove the .venv/ virtualenv (recreate it with `uv sync`).
+	@echo "→ Removing .venv/..."
 	@rm -rf .venv
 
 # ---------------------------------------------------------------------------
-# Wipe completo. Tras esto, recreás todo con `uv sync --frozen --extra dev`.
+# Full wipe. After this, rebuild everything with `uv sync --frozen --extra dev`.
 # ---------------------------------------------------------------------------
-distclean: clean clean-precommit clean-uv clean-venv  ## Limpieza total: clean + precommit + uv + venv.
-	@echo "✓ Wipe completo. Reconstruí con: uv sync --frozen --extra dev"
+distclean: clean clean-precommit clean-uv clean-venv  ## Full wipe: clean + precommit + uv + venv.
+	@echo "✓ Full wipe done. Rebuild with: uv sync --frozen --extra dev"

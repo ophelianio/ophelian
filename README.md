@@ -332,11 +332,11 @@ surfaces a **"Report a vulnerability"** button on the repo's
    This is the recommended channel: end-to-end private, no email
    round-trip, and triaged automatically into a GitHub Security
    Advisory if accepted.
-2. **Direct contact with the maintainer** — if GitHub PVR is not
-   available to you, reach out privately to the maintainer
-   [@LuisFalva](https://github.com/LuisFalva) via the email listed
-   on their public GitHub profile, with `[ophelian-security]` in
-   the subject line.
+2. **Direct contact with the maintainer** — only if you do not have
+   a GitHub account. Reach the maintainer
+   [@LuisFalva](https://github.com/LuisFalva) privately via the
+   email on their public GitHub profile, with `[ophelian-security]`
+   in the subject line. PVR is preferred for everyone else.
 
 You can expect an acknowledgement within **5 business days** and an
 initial triage within **10 business days** — see

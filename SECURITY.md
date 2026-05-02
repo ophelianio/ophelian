@@ -36,11 +36,13 @@ Use one of the private channels below, in order of preference:
    It is end-to-end private, requires no email round-trip, and
    triages directly into a GitHub Security Advisory if accepted.
 
-2. **Direct contact with the maintainer.**
-   If GitHub PVR is not available to you, contact the maintainer
+2. **Direct contact with the maintainer (only if you do not have a
+   GitHub account).** Contact the maintainer
    [@LuisFalva](https://github.com/LuisFalva) privately via the
    email listed on their public GitHub profile. Please put
-   `[ophelian-security]` in the subject line.
+   `[ophelian-security]` in the subject line. PVR is the strongly
+   preferred channel — email is slower to triage and lacks the
+   audit trail of a GitHub Security Advisory.
 
 When you report, it helps us a lot if you include:
 

@@ -13,6 +13,11 @@ on:
       - "docs/**"
       - "mkdocs.yml"
       - "ophelian/**"
+      # ``docs/security.md`` snippet-includes ``SECURITY.md`` from the
+      # repo root, so policy edits there must trigger a docs rebuild
+      # — otherwise the published site stays stale until something
+      # else under ``docs/`` changes.
+      - "SECURITY.md"
       - ".github/workflows/docs.yml"
   pull_request:
     branches: [main]
@@ -20,6 +25,7 @@ on:
       - "docs/**"
       - "mkdocs.yml"
       - "ophelian/**"
+      - "SECURITY.md"
   workflow_dispatch:
 
 concurrency:

@@ -55,7 +55,13 @@ markdown_extensions:
   - pymdownx.highlight:
       anchor_linenums: true
   - pymdownx.inlinehilite
-  - pymdownx.snippets
+  - pymdownx.snippets:
+      # Allow ``--8<-- "SECURITY.md"`` to pull the canonical policy
+      # straight from the repo root instead of duplicating it under
+      # ``docs/``. ``check_paths`` makes mkdocs --strict fail loudly
+      # if the include target is ever moved or deleted.
+      base_path: ["."]
+      check_paths: true
   - pymdownx.tasklist:
       custom_checkbox: true
 
@@ -77,6 +83,7 @@ nav:
   - CLI: cli.md
   - Cookbook: cookbook.md
   - Troubleshooting: troubleshooting.md
+  - Security: security.md
 
 extra:
   social:

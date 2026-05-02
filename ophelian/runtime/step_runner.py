@@ -454,6 +454,8 @@ def run(spec_path: Path) -> int:
         StepCompleted,
         StepFailed,
         StepStarted,
+    )
+    from ophelian.observability.events import (
         emit as emit_lifecycle,
     )
     from ophelian.observability.otel import step_span

@@ -235,6 +235,8 @@ class Pipeline(BaseModel):
         from ophelian.observability.events import (
             PipelineCompleted,
             PipelineStarted,
+        )
+        from ophelian.observability.events import (
             emit as emit_lifecycle,
         )
         from ophelian.observability.otel import (

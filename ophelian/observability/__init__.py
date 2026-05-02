@@ -238,6 +238,23 @@ def _otel_safe(value: Any) -> Any:
     return repr(value)
 
 
+from ophelian.observability.events import (  # noqa: E402
+    InferenceFailed,
+    LifecycleEvent,
+    ModelLoaded,
+    ModelSwapped,
+    ModelUnloaded,
+    PipelineCompleted,
+    PipelineStarted,
+    SpotInterruptionReceived,
+    StepCompleted,
+    StepFailed,
+    StepStarted,
+    on_event,
+)
+from ophelian.observability.events import (
+    emit as emit_lifecycle_event,
+)
 from ophelian.observability.otel import (  # noqa: E402  (circular-safe; otel.py does not import from us)
     auto_configure_from_env as auto_configure_otel,
 )
@@ -255,21 +272,6 @@ from ophelian.observability.otel import (  # noqa: E402
     serve_inflight_inc,
     serve_request_span,
     step_span,
-)
-from ophelian.observability.events import (  # noqa: E402
-    InferenceFailed,
-    LifecycleEvent,
-    ModelLoaded,
-    ModelSwapped,
-    ModelUnloaded,
-    PipelineCompleted,
-    PipelineStarted,
-    SpotInterruptionReceived,
-    StepCompleted,
-    StepFailed,
-    StepStarted,
-    emit as emit_lifecycle_event,
-    on_event,
 )
 
 __all__ = [

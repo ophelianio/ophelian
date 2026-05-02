@@ -42,7 +42,6 @@ from ophelian.observability.events import (
     on_event,
 )
 
-
 # ----------------------------------------------------------------------
 # Fixtures
 # ----------------------------------------------------------------------
@@ -112,14 +111,27 @@ def test_unsubscribe_stops_delivery() -> None:
     assert len(seen) == 1
 
 
-def test_handler_exception_does_not_propagate(
-    captured: list[LifecycleEvent], caplog: pytest.LogCaptureFixture
-) -> None:
-    def boom(_: LifecycleEvent) -> None:
-        raise RuntimeError("subscriber boom")
+def test_handler_exception_does_not_propagate(captured: list[LifecycleEvent]) -> None:
+    """Subscriber failures are logged at WARN and never break the
+    emitting code path nor sibling subscribers."""
 
-    on_event(boom)
-    with caplog.at_level(logging.WARNING, logger="ophelian.observability.events"):
+    records: list[logging.LogRecord] = []
+
+    class _Capture(logging.Handler):
+        def emit(self, record: logging.LogRecord) -> None:
+            records.append(record)
+
+    handler = _Capture(level=logging.WARNING)
+    target = logging.getLogger("ophelian.observability.events")
+    prior_level = target.level
+    target.addHandler(handler)
+    target.setLevel(logging.WARNING)
+    try:
+
+        def boom(_: LifecycleEvent) -> None:
+            raise RuntimeError("subscriber boom")
+
+        on_event(boom)
         emit(
             ModelSwapped(
                 source="t",
@@ -128,10 +140,13 @@ def test_handler_exception_does_not_propagate(
                 new_model_path="/b",
             )
         )
+    finally:
+        target.removeHandler(handler)
+        target.setLevel(prior_level)
     # Other subscribers still received the event.
     assert len(captured) == 1
     # Failure logged at WARN with handler identity.
-    assert any("Lifecycle handler" in r.getMessage() for r in caplog.records)
+    assert any("Lifecycle handler" in r.getMessage() for r in records)
 
 
 def test_otel_span_event_mirroring(

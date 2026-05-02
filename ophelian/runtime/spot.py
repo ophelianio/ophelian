@@ -160,6 +160,8 @@ class SpotInterruptionMonitor:
                 try:
                     from ophelian.observability.events import (
                         SpotInterruptionReceived,
+                    )
+                    from ophelian.observability.events import (
                         emit as emit_lifecycle,
                     )
 

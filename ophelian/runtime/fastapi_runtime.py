@@ -38,6 +38,8 @@ from ophelian.observability.events import (
     InferenceFailed,
     ModelLoaded,
     ModelUnloaded,
+)
+from ophelian.observability.events import (
     emit as emit_lifecycle,
 )
 from ophelian.observability.otel import (
@@ -220,20 +222,33 @@ def build_app(
             model_path=str(model_path),
         )
     )
-    app = FastAPI(title=f"ophelian-inference[{framework}]", version="0.1.0")
 
-    def _on_shutdown() -> None:
-        # Lifecycle: model_unloaded — fires when the FastAPI app
-        # shuts down (TestClient.__exit__, uvicorn graceful stop).
-        emit_lifecycle(
-            ModelUnloaded(
-                source=f"fastapi:{framework}",
-                framework=framework,
-                model_path=str(model_path),
+    # Lifecycle: model_unloaded — fires from the FastAPI lifespan
+    # post-yield branch so it triggers on every graceful shutdown
+    # (TestClient.__exit__, uvicorn graceful stop). FastAPI removed
+    # the legacy ``add_event_handler`` API in newer releases, so the
+    # lifespan context manager is the only forward-compatible hook.
+    from collections.abc import AsyncIterator
+    from contextlib import asynccontextmanager
+
+    @asynccontextmanager
+    async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
+        try:
+            yield
+        finally:
+            emit_lifecycle(
+                ModelUnloaded(
+                    source=f"fastapi:{framework}",
+                    framework=framework,
+                    model_path=str(model_path),
+                )
             )
-        )
 
-    app.add_event_handler("shutdown", _on_shutdown)
+    app = FastAPI(
+        title=f"ophelian-inference[{framework}]",
+        version="0.1.0",
+        lifespan=_lifespan,
+    )
     if enable_prometheus:
         # Mounting ``/metrics`` is only half the story — the route
         # serves whatever lives in ``prometheus_client.REGISTRY``, and

@@ -2,16 +2,17 @@ name: CodeQL
 
 # GitHub's deep static analysis. Free for OSS, much more thorough
 # than bandit. Results show up in the Security tab of the repo.
-# Runs on every PR and weekly so newly-shipped query packs catch
-# issues that were silent before.
+# Runs on every push to main and on every PR. Schedule (cron) is
+# intentionally OFF to avoid scheduled-runner cost; trigger an extra
+# scan manually via the "Run workflow" button in the Actions tab when
+# auditing a long-quiet branch.
 
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
-  schedule:
-    - cron: "30 6 * * 1"   # Mondays, 06:30 UTC (offset from Security workflow)
+  workflow_dispatch:
 
 concurrency:
   group: codeql-${{ github.ref }}

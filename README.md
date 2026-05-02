@@ -343,10 +343,12 @@ ship with a GitHub Security Advisory.
 **CI guardrails** (defense in depth, not a substitute for reports):
 
 - **CodeQL** — deep static analysis on every push to `main` and on
-  every PR, plus a weekly cron.
+  every PR. Manual re-runs available via *Run workflow* in the
+  Actions tab.
 - **pip-audit** + **bandit** + **gitleaks** — run on every push to
-  any branch and on every PR, plus a weekly cron so new CVEs surface
-  even when the repo is quiet.
+  any branch and on every PR. Manual re-runs available via *Run
+  workflow* in the Actions tab to surface newly-disclosed CVEs on a
+  quiet branch.
 - **GitHub Actions pinned to commit SHAs** with Dependabot watching
   for supply-chain regressions, and an `action-pin-check` CI job that
   fails the build if any workflow re-introduces a mutable `@v4`-style

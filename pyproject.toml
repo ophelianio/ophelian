@@ -93,6 +93,13 @@ otel = [
     # because it has fewer transitive deps than gRPC and works through
     # most corporate proxies.
     "opentelemetry-exporter-otlp-proto-http>=1.25",
+    # Optional Prometheus scrape endpoint. The OTel Prometheus reader
+    # writes into the prometheus_client default registry, which the
+    # FastAPI runtime serves at ``/metrics`` when ``enable_prometheus``
+    # is set on ``build_app`` (or ``OPHELIAN_PROMETHEUS=1`` on
+    # ``app_from_env``).
+    "opentelemetry-exporter-prometheus>=0.46b0",
+    "prometheus_client>=0.20",
 ]
 all = [
     "torch>=2.2",

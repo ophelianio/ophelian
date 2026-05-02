@@ -62,11 +62,21 @@ ATTR_PROVIDER = "ophelian.provider"
 ATTR_REGION = "ophelian.region"
 ATTR_STATUS = "ophelian.status"
 ATTR_FRAMEWORK = "ophelian.framework"
+# HTTP status class is the SRE-friendly bucket — "2xx" / "3xx" /
+# "4xx" / "5xx". It keeps alerting rules cheap to author (no need to
+# enumerate every status_code) while keeping cardinality bounded.
+ATTR_HTTP_STATUS_CLASS = "http.status_class"
 
 METRIC_PIPELINE_RUNS = "ophelian.pipeline.runs"
 METRIC_STEP_DURATION = "ophelian.step.duration"
 METRIC_SERVE_REQUESTS = "ophelian.serve.requests"
 METRIC_SERVE_LATENCY = "ophelian.serve.latency"
+METRIC_SERVE_INFERENCE_DURATION = "ophelian.serve.inference.duration"
+METRIC_SERVE_INFLIGHT = "ophelian.serve.inflight"
+METRIC_SERVE_QUEUE_DEPTH = "ophelian.serve.queue.depth"
+METRIC_SERVE_IDLE_SECONDS = "ophelian.serve.idle.seconds"
+METRIC_SERVE_TOKENS_IN = "ophelian.serve.tokens.in"
+METRIC_SERVE_TOKENS_OUT = "ophelian.serve.tokens.out"
 
 INSTRUMENTATION_NAME = "ophelian"
 
@@ -206,6 +216,24 @@ def auto_configure_from_env() -> None:
                     )
             if want_console:
                 readers.append(PeriodicExportingMetricReader(ConsoleMetricExporter()))
+            # Optional Prometheus scrape endpoint reader. The reader
+            # registers itself with ``prometheus_client.REGISTRY``;
+            # the FastAPI runtime serves that registry at ``/metrics``
+            # when the user opts in via ``enable_prometheus`` /
+            # ``OPHELIAN_PROMETHEUS=1``.
+            if _truthy(os.environ.get("OPHELIAN_OTEL_PROMETHEUS")):
+                try:
+                    from opentelemetry.exporter.prometheus import (
+                        PrometheusMetricReader,
+                    )
+
+                    readers.append(PrometheusMetricReader())
+                except ImportError:
+                    logger.debug(
+                        "OPHELIAN_OTEL_PROMETHEUS is set but "
+                        "opentelemetry-exporter-prometheus is not installed; "
+                        "skipping the Prometheus scrape endpoint reader."
+                    )
             if readers:
                 metrics.set_meter_provider(MeterProvider(resource=resource, metric_readers=readers))
         except Exception:  # pragma: no cover - defensive
@@ -215,11 +243,20 @@ def auto_configure_from_env() -> None:
 def _reset_auto_configuration_for_tests() -> None:
     """Test hook — clears the idempotency latch."""
     global _auto_configured, _pipeline_runs, _step_duration, _serve_requests, _serve_latency
+    global _serve_inference_duration, _serve_inflight, _serve_idle_seconds
+    global _serve_tokens_in, _serve_tokens_out, _serve_queue_depth, _serve_queue_callbacks
     _auto_configured = False
     _pipeline_runs = None
     _step_duration = None
     _serve_requests = None
     _serve_latency = None
+    _serve_inference_duration = None
+    _serve_inflight = None
+    _serve_idle_seconds = None
+    _serve_tokens_in = None
+    _serve_tokens_out = None
+    _serve_queue_depth = None
+    _serve_queue_callbacks = []
 
 
 # ----------------------------------------------------------------------
@@ -264,6 +301,16 @@ _pipeline_runs: Any = None
 _step_duration: Any = None
 _serve_requests: Any = None
 _serve_latency: Any = None
+_serve_inference_duration: Any = None
+_serve_inflight: Any = None
+_serve_idle_seconds: Any = None
+_serve_tokens_in: Any = None
+_serve_tokens_out: Any = None
+# Queue-depth callbacks registered per (route, callable) pair. The
+# observable gauge is created lazily on first registration so users
+# who never wire a queue pay zero cost.
+_serve_queue_depth: Any = None
+_serve_queue_callbacks: list[Any] = []
 
 
 def _pipeline_runs_counter() -> Any:
@@ -320,10 +367,148 @@ def _serve_latency_histogram() -> Any:
         return None
     _serve_latency = meter.create_histogram(
         name=METRIC_SERVE_LATENCY,
-        description="Inference request latency in seconds.",
+        description=(
+            "Total request latency in seconds (HTTP-in to HTTP-out, "
+            "includes inference + serialization + framework overhead)."
+        ),
         unit="s",
     )
     return _serve_latency
+
+
+def _serve_inference_duration_histogram() -> Any:
+    global _serve_inference_duration
+    if _serve_inference_duration is not None:
+        return _serve_inference_duration
+    meter = get_meter()
+    if meter is None:
+        return None
+    _serve_inference_duration = meter.create_histogram(
+        name=METRIC_SERVE_INFERENCE_DURATION,
+        description=(
+            "Wall-clock time spent inside the model adapter's predict "
+            "call, in seconds. Excludes HTTP serialization and "
+            "framework overhead — subtract from "
+            "``ophelian.serve.latency`` to derive that overhead."
+        ),
+        unit="s",
+    )
+    return _serve_inference_duration
+
+
+def _serve_inflight_updown_counter() -> Any:
+    global _serve_inflight
+    if _serve_inflight is not None:
+        return _serve_inflight
+    meter = get_meter()
+    if meter is None:
+        return None
+    _serve_inflight = meter.create_up_down_counter(
+        name=METRIC_SERVE_INFLIGHT,
+        description="Concurrent in-flight requests currently being served.",
+        unit="1",
+    )
+    return _serve_inflight
+
+
+def _serve_idle_counter() -> Any:
+    global _serve_idle_seconds
+    if _serve_idle_seconds is not None:
+        return _serve_idle_seconds
+    meter = get_meter()
+    if meter is None:
+        return None
+    _serve_idle_seconds = meter.create_counter(
+        name=METRIC_SERVE_IDLE_SECONDS,
+        description=(
+            "Cumulative seconds the endpoint had zero in-flight "
+            "requests. Useful for autoscaler reclaim-on-idle policies."
+        ),
+        unit="s",
+    )
+    return _serve_idle_seconds
+
+
+def _serve_tokens_in_counter() -> Any:
+    global _serve_tokens_in
+    if _serve_tokens_in is not None:
+        return _serve_tokens_in
+    meter = get_meter()
+    if meter is None:
+        return None
+    _serve_tokens_in = meter.create_counter(
+        name=METRIC_SERVE_TOKENS_IN,
+        description=(
+            "Total prompt / input tokens consumed by inference "
+            "requests. Only emitted when the model adapter exposes a "
+            "token usage shape (e.g. OpenAI-compatible "
+            "``response.usage.prompt_tokens``)."
+        ),
+        unit="1",
+    )
+    return _serve_tokens_in
+
+
+def _serve_tokens_out_counter() -> Any:
+    global _serve_tokens_out
+    if _serve_tokens_out is not None:
+        return _serve_tokens_out
+    meter = get_meter()
+    if meter is None:
+        return None
+    _serve_tokens_out = meter.create_counter(
+        name=METRIC_SERVE_TOKENS_OUT,
+        description=(
+            "Total completion / output tokens produced by inference "
+            "requests. Only emitted when the model adapter exposes a "
+            "token usage shape."
+        ),
+        unit="1",
+    )
+    return _serve_tokens_out
+
+
+def register_queue_depth_observer(
+    callback: Any, *, route: str | None = None
+) -> None:
+    """Register an observable callback for ``ophelian.serve.queue.depth``.
+
+    The callback is invoked by the OTel meter on each collection cycle
+    and must return the current queue depth (int / float). When no
+    queue is wired, the gauge is simply not populated.
+
+    Multiple endpoints can register independently; we route their
+    samples by the optional ``route`` label.
+    """
+    global _serve_queue_depth
+    meter = get_meter()
+    if meter is None:
+        return
+    try:
+        from opentelemetry.metrics import CallbackOptions, Observation
+    except ImportError:  # pragma: no cover - OTel API >=1.20 ships these
+        return
+
+    def _wrapped(_options: CallbackOptions) -> Iterator[Any]:
+        try:
+            value = float(callback())
+        except Exception:  # pragma: no cover - defensive
+            return
+        attrs = _attrs({"http.route": route}) if route else {}
+        yield Observation(value, attrs)
+
+    _serve_queue_callbacks.append(_wrapped)
+    if _serve_queue_depth is None:
+        _serve_queue_depth = meter.create_observable_gauge(
+            name=METRIC_SERVE_QUEUE_DEPTH,
+            callbacks=_serve_queue_callbacks,
+            description=(
+                "Current depth of any request queue in front of the "
+                "endpoint. Only populated when the runtime registers "
+                "a queue-depth callback."
+            ),
+            unit="1",
+        )
 
 
 # ----------------------------------------------------------------------
@@ -591,6 +776,18 @@ def serve_request_span(
         yield span
 
 
+def _status_class(status_code: int) -> str:
+    """Return ``"2xx"`` / ``"3xx"`` / ``"4xx"`` / ``"5xx"`` for a status code.
+
+    Anything outside the 100..599 range is bucketed as ``"unknown"`` —
+    we'd rather see a clear "unknown" data point than silently lie.
+    """
+    code = int(status_code)
+    if 100 <= code <= 599:
+        return f"{code // 100}xx"
+    return "unknown"
+
+
 def record_serve_outcome(
     *,
     method: str,
@@ -598,32 +795,158 @@ def record_serve_outcome(
     status_code: int,
     duration_seconds: float,
     span: Any | None = None,
+    inference_duration_seconds: float | None = None,
 ) -> None:
-    """Tag the serve span with ``http.status_code`` and feed metrics."""
+    """Tag the serve span and feed the per-request metrics.
+
+    Records ``ophelian.serve.requests`` (counter) and
+    ``ophelian.serve.latency`` (histogram, total HTTP time). When
+    ``inference_duration_seconds`` is supplied, also records
+    ``ophelian.serve.inference.duration`` so SREs can separate model
+    work from HTTP / serialization overhead. The
+    :data:`ATTR_HTTP_STATUS_CLASS` label is added to all three so
+    alerting rules can target ``5xx`` without enumerating codes.
+    """
+    status_class = _status_class(status_code)
     if span is not None and hasattr(span, "set_attribute"):
         span.set_attribute("http.status_code", int(status_code))
+        span.set_attribute(ATTR_HTTP_STATUS_CLASS, status_class)
         span.set_attribute(
             ATTR_STATUS,
-            "success" if 200 <= status_code < 400 else "failed",
+            "success" if 200 <= int(status_code) < 400 else "failed",
         )
-    counter = _serve_requests_counter()
-    histogram = _serve_latency_histogram()
     dim = _attrs(
         {
             "http.method": method,
             "http.route": route,
             "http.status_code": int(status_code),
+            ATTR_HTTP_STATUS_CLASS: status_class,
         }
     )
+    counter = _serve_requests_counter()
+    histogram = _serve_latency_histogram()
     if counter is not None:
         counter.add(1, attributes=dim)
     if histogram is not None:
         histogram.record(max(duration_seconds, 0.0), attributes=dim)
+    if inference_duration_seconds is not None:
+        inf_hist = _serve_inference_duration_histogram()
+        if inf_hist is not None:
+            inf_hist.record(max(inference_duration_seconds, 0.0), attributes=dim)
+
+
+def serve_inflight_inc(*, method: str, route: str) -> None:
+    """Increment the in-flight request gauge for one request entering."""
+    counter = _serve_inflight_updown_counter()
+    if counter is None:
+        return
+    counter.add(1, attributes=_attrs({"http.method": method, "http.route": route}))
+
+
+def serve_inflight_dec(*, method: str, route: str) -> None:
+    """Decrement the in-flight request gauge after a request finishes."""
+    counter = _serve_inflight_updown_counter()
+    if counter is None:
+        return
+    counter.add(-1, attributes=_attrs({"http.method": method, "http.route": route}))
+
+
+def record_serve_idle(*, route: str | None, idle_seconds: float) -> None:
+    """Add to the cumulative idle-time counter for an endpoint."""
+    if idle_seconds <= 0.0:
+        return
+    counter = _serve_idle_counter()
+    if counter is None:
+        return
+    attrs = _attrs({"http.route": route}) if route else {}
+    counter.add(float(idle_seconds), attributes=attrs)
+
+
+def _coerce_token_count(value: Any) -> int | None:
+    """Best-effort numeric coercion for token-usage payloads.
+
+    Some LLM SDKs return tokens as ``int``, some as ``float``, and a
+    few wire-protocol implementations send them as numeric strings.
+    We accept all three and return ``None`` for anything else — the
+    metric stays silent rather than emit a fabricated zero.
+    """
+    if value is None:
+        return None
+    if isinstance(value, bool):  # bool is an int subclass — exclude it
+        return None
+    if isinstance(value, (int, float)):
+        return int(value)
+    if isinstance(value, str):
+        try:
+            return int(float(value))
+        except ValueError:
+            return None
+    return None
+
+
+def extract_token_usage(
+    prediction: Any, payload: Any | None = None
+) -> tuple[int | None, int | None]:
+    """Best-effort detection of ``(tokens_in, tokens_out)`` from common
+    LLM adapter return shapes.
+
+    Recognised shapes (first match wins):
+
+    * **OpenAI-compatible**: ``{"usage": {"prompt_tokens": N,
+      "completion_tokens": M}}``.
+    * **Anthropic-compatible**: ``{"usage": {"input_tokens": N,
+      "output_tokens": M}}``.
+    * **Explicit override**: top-level ``{"tokens_in": N,
+      "tokens_out": M}`` — for adapter authors who want to feed the
+      counters directly.
+
+    Adapter authors writing a custom :class:`ModelAdapter` can call
+    this helper from their own runtime integration to benefit from
+    the same detection logic the FastAPI runtime uses.
+
+    Returns ``(None, None)`` for any unrecognised shape — guessing
+    would be worse than no signal.
+    """
+    if not isinstance(prediction, dict):
+        return (None, None)
+    if "tokens_in" in prediction or "tokens_out" in prediction:
+        return (
+            _coerce_token_count(prediction.get("tokens_in")),
+            _coerce_token_count(prediction.get("tokens_out")),
+        )
+    usage = prediction.get("usage")
+    if isinstance(usage, dict):
+        tin_val = usage.get("prompt_tokens", usage.get("input_tokens"))
+        tout_val = usage.get("completion_tokens", usage.get("output_tokens"))
+        return (_coerce_token_count(tin_val), _coerce_token_count(tout_val))
+    del payload  # reserved for future heuristics (e.g. tokenizing the prompt)
+    return (None, None)
+
+
+def record_inference_tokens(
+    *,
+    method: str,
+    route: str,
+    framework: str | None,
+    tokens_in: int | None,
+    tokens_out: int | None,
+) -> None:
+    """Record per-request token usage when the adapter exposed it."""
+    dim = _attrs({"http.method": method, "http.route": route, ATTR_FRAMEWORK: framework})
+    if tokens_in is not None:
+        ctr = _serve_tokens_in_counter()
+        if ctr is not None:
+            ctr.add(int(tokens_in), attributes=dim)
+    if tokens_out is not None:
+        ctr = _serve_tokens_out_counter()
+        if ctr is not None:
+            ctr.add(int(tokens_out), attributes=dim)
 
 
 __all__ = [
     "ATTR_ENV_CLASS",
     "ATTR_FRAMEWORK",
+    "ATTR_HTTP_STATUS_CLASS",
     "ATTR_PIPELINE_NAME",
     "ATTR_PROVIDER",
     "ATTR_REGION",
@@ -633,17 +956,29 @@ __all__ = [
     "ATTR_STEP_NAME",
     "INSTRUMENTATION_NAME",
     "METRIC_PIPELINE_RUNS",
+    "METRIC_SERVE_IDLE_SECONDS",
+    "METRIC_SERVE_INFERENCE_DURATION",
+    "METRIC_SERVE_INFLIGHT",
     "METRIC_SERVE_LATENCY",
+    "METRIC_SERVE_QUEUE_DEPTH",
     "METRIC_SERVE_REQUESTS",
+    "METRIC_SERVE_TOKENS_IN",
+    "METRIC_SERVE_TOKENS_OUT",
     "METRIC_STEP_DURATION",
     "auto_configure_from_env",
+    "extract_token_usage",
     "get_meter",
     "get_tracer",
     "is_otel_available",
     "pipeline_span",
+    "record_inference_tokens",
     "record_pipeline_outcome",
+    "record_serve_idle",
     "record_serve_outcome",
     "record_step_outcome",
+    "register_queue_depth_observer",
+    "serve_inflight_dec",
+    "serve_inflight_inc",
     "serve_request_span",
     "step_span",
 ]

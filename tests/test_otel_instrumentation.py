@@ -43,39 +43,17 @@ from ophelian.providers.standalone import StandaloneProvider
 # ----------------------------------------------------------------------
 
 
-@pytest.fixture(scope="module")
-def _otel_providers() -> Iterator[dict[str, Any]]:
-    """Install global Tracer + Meter providers once for the module.
+@pytest.fixture()
+def _otel_providers(_otel_in_memory_providers: dict[str, Any]) -> dict[str, Any]:
+    """Thin alias over the shared session-scoped OTel providers.
 
-    OpenTelemetry's ``set_*_provider`` is once-only by design; trying to
-    swap providers per test corrupts global state and hangs subsequent
-    tests. So we install the providers once and let individual tests
-    clear the in-memory exporter / reader between runs.
+    The actual provider installation lives in ``tests/conftest.py``
+    because OTel's ``set_*_provider`` is one-shot — multiple test
+    modules cannot each install their own provider, the second call
+    is silently dropped. Individual tests still clear the in-memory
+    exporter / reader between runs through their own fixtures.
     """
-    import os
-
-    os.environ["OPHELIAN_OTEL_DISABLE"] = "1"  # we own the providers, skip auto-config
-    from opentelemetry import metrics, trace
-    from opentelemetry.sdk.metrics import MeterProvider
-    from opentelemetry.sdk.metrics.export import InMemoryMetricReader
-    from opentelemetry.sdk.trace import TracerProvider
-    from opentelemetry.sdk.trace.export import SimpleSpanProcessor
-    from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
-        InMemorySpanExporter,
-    )
-
-    span_exporter = InMemorySpanExporter()
-    tracer_provider = TracerProvider()
-    tracer_provider.add_span_processor(SimpleSpanProcessor(span_exporter))
-    metric_reader = InMemoryMetricReader()
-    meter_provider = MeterProvider(metric_readers=[metric_reader])
-    trace.set_tracer_provider(tracer_provider)
-    metrics.set_meter_provider(meter_provider)
-    _reset_auto_configuration_for_tests()
-    try:
-        yield {"spans": span_exporter, "metrics": metric_reader}
-    finally:
-        os.environ.pop("OPHELIAN_OTEL_DISABLE", None)
+    return _otel_in_memory_providers
 
 
 @pytest.fixture()
@@ -311,8 +289,12 @@ def test_serve_request_emits_span_and_metrics(
         p.attributes.get("http.route") == "/health" and p.value >= 1 for p in counter_points
     )
     latency_points = _metric_points(otel_capture["metrics"], METRIC_SERVE_LATENCY)
-    assert latency_points
-    assert latency_points[0].attributes.get("http.route") == "/health"
+    # The in-memory metric reader is session-scoped (set_meter_provider
+    # is one-shot in OTel), so other tests may have left /predict
+    # samples behind. Assert that *our* /health sample is present.
+    assert any(p.attributes.get("http.route") == "/health" for p in latency_points), [
+        p.attributes for p in latency_points
+    ]
 
 
 # ----------------------------------------------------------------------

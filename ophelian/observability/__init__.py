@@ -252,7 +252,7 @@ from ophelian.observability.events import (  # noqa: E402
     StepStarted,
     on_event,
 )
-from ophelian.observability.events import (
+from ophelian.observability.events import (  # noqa: E402
     emit as emit_lifecycle_event,
 )
 from ophelian.observability.otel import (  # noqa: E402  (circular-safe; otel.py does not import from us)

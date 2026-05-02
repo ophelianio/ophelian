@@ -35,6 +35,7 @@ extra plumbing.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 import threading
@@ -182,11 +183,8 @@ def on_event(handler: EventHandler) -> Unsubscribe:
         _subscribers.append(handler)
 
     def _unsubscribe() -> None:
-        with _lock:
-            try:
-                _subscribers.remove(handler)
-            except ValueError:
-                pass
+        with _lock, contextlib.suppress(ValueError):
+            _subscribers.remove(handler)
 
     return _unsubscribe
 

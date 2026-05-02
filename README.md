@@ -291,7 +291,7 @@ Pick the right channel:
 | Ask a usage question | [GitHub Discussions](https://github.com/LuisFalva/ophelian/discussions) |
 | Report a reproducible bug | [Issues → Bug report](https://github.com/LuisFalva/ophelian/issues/new?template=bug_report.yml) |
 | Request a feature | [Issues → Feature request](https://github.com/LuisFalva/ophelian/issues/new?template=feature_request.yml) |
-| Report a security vulnerability | See [Security](#security) — please **do not** file a public issue |
+| Report a security vulnerability | See [`SECURITY.md`](SECURITY.md) — please **do not** file a public issue |
 | Show what you built with it | [Discussions → Show and tell](https://github.com/LuisFalva/ophelian/discussions/categories/show-and-tell) |
 
 We follow the
@@ -318,6 +318,12 @@ Please **do not** report security vulnerabilities via public GitHub
 issues. We take security seriously and want a chance to ship a fix
 before the bug is public.
 
+The full disclosure policy — supported versions, in-scope components,
+response timeline, safe-harbour, and credit process — lives in
+[`SECURITY.md`](SECURITY.md). GitHub auto-detects that file and
+surfaces a **"Report a vulnerability"** button on the repo's
+[Security tab](https://github.com/LuisFalva/ophelian/security).
+
 **How to report (in order of preference):**
 
 1. **GitHub Private Vulnerability Reporting** — open
@@ -326,19 +332,16 @@ before the bug is public.
    This is the recommended channel: end-to-end private, no email
    round-trip, and triaged automatically into a GitHub Security
    Advisory if accepted.
-2. **Direct contact with the maintainer** — until a dedicated
-   `SECURITY.md` is published (planned, tracked separately), reach
-   out privately to the maintainer
-   [@LuisFalva](https://github.com/LuisFalva) via GitHub
-   (Profile → "..." → *Block or report* is **not** the right channel;
-   use the GitHub message form or the email listed on the maintainer's
-   public profile). Expect an acknowledgement within **5 business
-   days**.
+2. **Direct contact with the maintainer** — if GitHub PVR is not
+   available to you, reach out privately to the maintainer
+   [@LuisFalva](https://github.com/LuisFalva) via the email listed
+   on their public GitHub profile, with `[ophelian-security]` in
+   the subject line.
 
-A future [`SECURITY.md`](SECURITY.md) will codify the full
-disclosure policy: in-scope components, supported versions, expected
-response timeline, and the embargo / credit process. Patched releases
-ship with a GitHub Security Advisory.
+You can expect an acknowledgement within **5 business days** and an
+initial triage within **10 business days** — see
+[`SECURITY.md`](SECURITY.md) for the full timeline. Patched
+releases ship with a GitHub Security Advisory.
 
 **CI guardrails** (defense in depth, not a substitute for reports):
 
@@ -361,6 +364,9 @@ PRs welcome. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for dev setup
 contract, and the pricing-table refresh process. The bar for new
 public API is *"this makes pipelines more portable, more honest, or
 more pleasant to use across every supported env."*
+
+Found a security issue? Please follow the disclosure policy in
+[`SECURITY.md`](SECURITY.md) instead of opening a public issue.
 
 By participating you agree to abide by the
 [Code of Conduct](CODE_OF_CONDUCT.md).

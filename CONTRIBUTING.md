@@ -119,6 +119,14 @@ Practical impact for contributors:
   letting Dependabot do it), include both the new SHA *and* the
   upstream tag as a trailing comment so the reviewer can verify it,
   e.g. `uses: actions/checkout@<sha>  # v4.2.2`.
+  This is enforced by the `action-pin-check` job in
+  `.github/workflows/security.yml`: any `uses:` line under
+  `.github/workflows/` that doesn't end in `@<40-char-sha>` will fail
+  CI with an inline annotation pointing at the offending line. If the
+  job rejects your PR, run
+  `git grep -nE 'uses:[[:space:]]+[^[:space:]]+@' .github/workflows`
+  to find any `@v4` / `@main` / `@<short-sha>` style refs and replace
+  them with the full commit SHA + tag comment.
 - Workflow changes that add new `permissions:`, new `secrets.*`
   references, or new `pull_request_target` triggers should call that
   out explicitly in the PR description — those are the changes most

@@ -348,7 +348,9 @@ ship with a GitHub Security Advisory.
   any branch and on every PR, plus a weekly cron so new CVEs surface
   even when the repo is quiet.
 - **GitHub Actions pinned to commit SHAs** with Dependabot watching
-  for supply-chain regressions.
+  for supply-chain regressions, and an `action-pin-check` CI job that
+  fails the build if any workflow re-introduces a mutable `@v4`-style
+  reference.
 
 ## Contributing
 

@@ -1,9 +1,10 @@
 name: Security
 
-# Three layers of automated security checks:
-#   1. pip-audit  — known CVEs in our pinned dependency tree
-#   2. bandit     — static analysis for common Python security issues
-#   3. gitleaks   — scan diffs for accidentally-committed secrets
+# Four layers of automated security checks:
+#   1. pip-audit       — known CVEs in our pinned dependency tree
+#   2. bandit          — static analysis for common Python security issues
+#   3. gitleaks        — scan diffs for accidentally-committed secrets
+#   4. action-pin-check — block workflows that reference mutable action tags
 #
 # Runs on every push and PR for fast feedback, plus a weekly cron
 # so newly-disclosed CVEs surface even when the repo is quiet.
@@ -90,3 +91,54 @@ jobs:
       - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7  # v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ---------------------------------------------------------------
+  # action-pin-check — every `uses:` line under `.github/workflows/`
+  # must reference an immutable 40-char commit SHA, not a mutable
+  # tag/branch like `@v4` or `@main`. A hijacked tag would otherwise
+  # be enough to inject malicious code into the release pipeline.
+  # See CONTRIBUTING.md ("Changes to .github/") for the rationale.
+  # ---------------------------------------------------------------
+  action-pin-check:
+    name: action-pin-check (workflow SHA pins)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+      - name: Verify all `uses:` references are pinned to a 40-char SHA
+        shell: bash
+        run: |
+          set -uo pipefail
+          shopt -s nullglob
+
+          fail=0
+          # Match any `uses: <ref>@<something>`; we then validate <something>
+          # is exactly 40 lowercase hex chars. Local composite actions
+          # (`uses: ./path`) don't contain `@` and are skipped naturally.
+          pattern='^[[:space:]]*-?[[:space:]]*uses:[[:space:]]+[^[:space:]]+@'
+
+          for file in .github/workflows/*.yml .github/workflows/*.yaml; do
+            while IFS=: read -r lineno content; do
+              # Strip trailing comment, then take the part after the last `@`.
+              ref_with_comment="${content#*@}"
+              ref="${ref_with_comment%%#*}"
+              # Trim surrounding whitespace.
+              ref="${ref#"${ref%%[![:space:]]*}"}"
+              ref="${ref%"${ref##*[![:space:]]}"}"
+
+              if [[ ! "$ref" =~ ^[0-9a-f]{40}$ ]]; then
+                # GitHub Actions error annotation: surfaces inline in the PR.
+                echo "::error file=${file},line=${lineno}::Action is not pinned to an immutable 40-char commit SHA (found '@${ref}'). Pin it as 'uses: owner/repo@<40-char-sha>  # <tag>' so a hijacked tag can't slip into the release pipeline. See CONTRIBUTING.md."
+                fail=1
+              fi
+            done < <(grep -nE "$pattern" "$file" || true)
+          done
+
+          if [[ "$fail" -ne 0 ]]; then
+            echo ""
+            echo 'One or more workflow `uses:` lines are not pinned to a commit SHA.'
+            echo "Fix by replacing the mutable ref with the action's commit SHA, e.g.:"
+            echo '  - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4'
+            exit 1
+          fi
+
+          echo "All workflow actions are pinned to 40-char commit SHAs."

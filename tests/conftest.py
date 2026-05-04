@@ -20,6 +20,20 @@ from typing import Any
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def _isolate_cost_ledger(
+    tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch
+) -> Iterator[None]:
+    """Redirect the cost ledger to a per-test temp file so the suite
+    never appends to the developer's real ``~/.ophelian/ledger.jsonl``.
+    Tests that exercise the ledger explicitly override the env var
+    themselves via their own fixture; this autouse just provides the
+    safety net for everything else."""
+    target = tmp_path_factory.mktemp("ledger") / "ledger.jsonl"
+    monkeypatch.setenv("OPHELIAN_LEDGER_PATH", str(target))
+    yield
+
+
 @pytest.fixture(scope="session")
 def _otel_in_memory_providers() -> Iterator[dict[str, Any]]:
     os.environ["OPHELIAN_OTEL_DISABLE"] = "1"

@@ -81,6 +81,7 @@ nav:
   - Models: models.md
   - Stores: stores.md
   - CLI: cli.md
+  - Cost ledger: ledger.md
   - Cookbook: cookbook.md
   - Observability:
       - Grafana dashboard: observability/grafana.md

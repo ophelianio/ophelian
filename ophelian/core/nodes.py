@@ -264,6 +264,7 @@ class Pipeline(BaseModel):
         # tagged with the authoritative ``PipelineResult.succeeded``
         # rather than mere exception-escape semantics.
         status: str = "failed"
+        result_for_ledger: PipelineResult | None = None
         try:
             with pipeline_span(
                 pipeline_name=self.name,
@@ -287,6 +288,7 @@ class Pipeline(BaseModel):
                 )
                 try:
                     result = env.execute(self, plan)
+                    result_for_ledger = result
                     status = "success" if result.succeeded else "failed"
                     if span is not None and hasattr(span, "set_attribute"):
                         final_run_id = getattr(env, "_run_id", None)
@@ -314,6 +316,33 @@ class Pipeline(BaseModel):
                 status=status,
                 provider=provider_name,
             )
+            # Cost ledger row (Task #28). Best-effort: never raises.
+            try:
+                from ophelian.observability.ledger import emit_run_row
+
+                if result_for_ledger is not None:
+                    hours = sum(
+                        (s.duration_seconds or 0.0) for s in result_for_ledger.steps
+                    ) / 3600.0
+                else:
+                    hours = 0.0
+                emit_run_row(
+                    pipeline_name=self.name,
+                    run_id=getattr(env, "_run_id", None)
+                    or getattr(env, "_last_run_id", None),
+                    env_class=env_class,
+                    provider=provider_name,
+                    region=str(region) if region is not None else None,
+                    gpu_type=getattr(getattr(env, "_config", None), "gpu_type", None),
+                    instance=getattr(getattr(env, "_config", None), "instance", None)
+                    or getattr(getattr(env, "_config", None), "vm_size", None),
+                    hours=hours,
+                    hourly_usd=getattr(env, "_router_quote_hourly_usd", None),
+                    status=status,
+                    context=self.context,
+                )
+            except Exception:  # pragma: no cover - ledger must never break runs
+                pass
 
     def dry_run(self) -> None:
         """Pretty-print the execution plan without running anything."""

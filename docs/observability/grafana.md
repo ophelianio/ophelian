@@ -52,8 +52,17 @@ A `Route` template variable lets you slice every panel by HTTP route
     ```python
     from ophelian.runtime.fastapi_runtime import build_app
 
-    app = build_app(adapter, enable_prometheus=True)
+    app = build_app(
+        framework="sklearn",
+        model_path="/path/to/model.joblib",
+        enable_prometheus=True,
+    )
     ```
+
+    The framework name is whatever your model adapter is registered
+    under (`sklearn`, `xgboost`, `pytorch`, …). The `FastAPIRuntime`
+    class accepts the same `enable_prometheus=True` flag if you prefer
+    that entrypoint.
 
 3. **Wire your Prometheus server to scrape it** (a minimal job):
 

@@ -82,6 +82,8 @@ nav:
   - Stores: stores.md
   - CLI: cli.md
   - Cookbook: cookbook.md
+  - Observability:
+      - Grafana dashboard: observability/grafana.md
   - Troubleshooting: troubleshooting.md
   - Security: security.md
   - Changelog: changelog.md

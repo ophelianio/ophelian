@@ -8,7 +8,11 @@ datasource scraping your model's `/metrics` endpoint, and you're done.
 
 ## What it shows
 
-The dashboard has three rows:
+The dashboard has four rows:
+
+**Now** — at-a-glance stat panels for the current in-flight count,
+queue depth, 5-minute request rate, and 5xx error ratio. Color
+thresholds make it obvious when something is on fire.
 
 **Traffic**
 

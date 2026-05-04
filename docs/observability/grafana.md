@@ -35,6 +35,15 @@ The dashboard has three rows:
   sat with zero in-flight requests. Drives autoscaler reclaim-on-idle
   decisions.
 
+> **Multi-replica idle interpretation.** The idle panel shows
+> `rate(ophelian_serve_idle_seconds_total[$__rate_interval])` per
+> route. With a single replica this is bounded in `[0, 1]` and reads
+> as a literal fraction; with N replicas summed, the value is bounded
+> in `[0, N]` (think "idle replica-seconds per second"). Divide by the
+> replica count — or wrap in `avg()` instead of the panel's per-route
+> breakdown — if you want a normalized 0–1 fraction in a horizontally
+> scaled deployment.
+
 A `Route` template variable lets you slice every panel by HTTP route
 (or pick `All` for an aggregated view).
 

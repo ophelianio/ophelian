@@ -238,6 +238,17 @@ def _otel_safe(value: Any) -> Any:
     return repr(value)
 
 
+from ophelian.observability.drift import (  # noqa: E402
+    Baseline,
+    DataDriftMonitor,
+    DriftDetected,
+    DriftDetector,
+    DriftResult,
+    FeatureBaseline,
+    PredictionDriftMonitor,
+    ScipyDetector,
+    attach_drift_monitors,
+)
 from ophelian.observability.events import (  # noqa: E402
     InferenceFailed,
     LifecycleEvent,
@@ -275,6 +286,12 @@ from ophelian.observability.otel import (  # noqa: E402
 )
 
 __all__ = [
+    "Baseline",
+    "DataDriftMonitor",
+    "DriftDetected",
+    "DriftDetector",
+    "DriftResult",
+    "FeatureBaseline",
     "InferenceFailed",
     "JSONFormatter",
     "LifecycleEvent",
@@ -283,10 +300,13 @@ __all__ = [
     "ModelUnloaded",
     "PipelineCompleted",
     "PipelineStarted",
+    "PredictionDriftMonitor",
+    "ScipyDetector",
     "SpotInterruptionReceived",
     "StepCompleted",
     "StepFailed",
     "StepStarted",
+    "attach_drift_monitors",
     "auto_configure_otel",
     "bind_run",
     "configure_logging",

@@ -460,11 +460,25 @@ class StandaloneProvider(Provider):
             "resumed": resume_from is not None,
         }
         (model_dir / "ophelian.json").write_text(json.dumps(descriptor, indent=2, default=str))
+        out_artifacts: dict[str, str] = {"model": str(model_dir), "artifact": str(artifact_path)}
+        # Drift baseline capture (Task #30). Snapshots the training
+        # feature + prediction distributions so a downstream Deploy
+        # node can attach drift monitors without manual plumbing.
+        if node.capture_baseline:
+            baseline_path = _capture_training_baseline(
+                node=node,
+                adapter=adapter,
+                model=model,
+                dataset=dataset,
+                step_dir=step_dir,
+            )
+            if baseline_path is not None:
+                out_artifacts["baseline"] = str(baseline_path)
         return StepResult(
             name=node.name,
             kind=node.kind,
             status="success",
-            artifacts={"model": str(model_dir), "artifact": str(artifact_path)},
+            artifacts=out_artifacts,
             info={
                 "framework": node.framework,
                 "mode": self._mode,
@@ -550,7 +564,31 @@ class StandaloneProvider(Provider):
         descriptor = json.loads(descriptor_path.read_text())
         from ophelian.runtime.fastapi_runtime import build_app
 
-        app = build_app(framework=descriptor["framework"], model_path=model_path)
+        # Resolve the drift baseline (Task #30) before constructing the
+        # app so monitor attachment is part of app construction rather
+        # than a follow-up step external code might forget to invoke.
+        baseline_path: str | None = None
+        if node.drift_baseline == "auto":
+            baseline_path = train_artifacts.get("baseline")
+            if baseline_path is None:
+                raise ValueError(
+                    f"Deploy step {node.name!r} requested drift_baseline='auto' "
+                    f"but upstream Train step {node.model!r} did not publish a "
+                    f"'baseline' artifact — set capture_baseline=True on the Train node."
+                )
+        elif node.drift_baseline:
+            baseline_path = node.drift_baseline
+
+        app = build_app(
+            framework=descriptor["framework"],
+            model_path=model_path,
+            drift_baseline_path=baseline_path,
+            drift_endpoint=node.name if baseline_path else None,
+            drift_window_size=node.drift_window_size,
+            drift_stride=node.drift_stride,
+            drift_test=node.drift_test,
+            drift_threshold=node.drift_threshold,
+        )
         self.apps[node.name] = app
 
         url = f"http://localhost:{node.port}"
@@ -716,6 +754,22 @@ class StandaloneProvider(Provider):
         host_port = _pick_free_port()
         container_port = node.port
         container_model_dir = "/model"
+        # Drift baseline (Task #30) — resolve and stage the same way
+        # the in-process deploy path does so the container deploy
+        # has parity. We mount the baseline file into the container
+        # at a stable path and pass drift config via env vars
+        # consumed by ``app_from_env``.
+        host_baseline: str | None = None
+        if node.drift_baseline == "auto":
+            host_baseline = train_artifacts.get("baseline")
+            if host_baseline is None:
+                raise ValueError(
+                    f"Deploy step {node.name!r} requested drift_baseline='auto' "
+                    f"but upstream Train step {node.model!r} did not publish a "
+                    f"'baseline' artifact — set capture_baseline=True on the Train node."
+                )
+        elif node.drift_baseline:
+            host_baseline = node.drift_baseline
         # ``model_path_host`` already points to the per-step ``model/`` dir
         # produced by Train (it contains ``ophelian.json`` and the artifact
         # file). Mount THAT directly at /model so the in-container adapter
@@ -736,11 +790,17 @@ class StandaloneProvider(Provider):
                 "--port",
                 str(container_port),
             ],
-            volumes={host_model_dir: container_model_dir},
-            environment={
-                "OPHELIAN_FRAMEWORK": descriptor["framework"],
-                "OPHELIAN_MODEL_PATH": container_model_dir,
-            },
+            volumes=(
+                {host_model_dir: container_model_dir, Path(host_baseline): "/baseline.json"}
+                if host_baseline
+                else {host_model_dir: container_model_dir}
+            ),
+            environment=_deploy_container_env(
+                framework=descriptor["framework"],
+                model_dir=container_model_dir,
+                node=node,
+                baseline_in_container="/baseline.json" if host_baseline else None,
+            ),
             ports={host_port: container_port},
             detach=True,
             name=container_name,
@@ -869,6 +929,97 @@ def _wait_for_http(host: str, port: int, *, timeout: float) -> bool:  # pragma: 
         except OSError:
             time.sleep(0.5)
     return False
+
+
+def _deploy_container_env(
+    *,
+    framework: str,
+    model_dir: str,
+    node: Deploy,
+    baseline_in_container: str | None,
+) -> dict[str, str]:
+    """Env contract consumed by ``app_from_env`` inside the deploy container.
+
+    Mirrors the in-process ``build_app`` drift parameters so opt-in
+    drift behaviour is identical across deploy modes (Task #30
+    parity finding).
+    """
+    env: dict[str, str] = {
+        "OPHELIAN_FRAMEWORK": framework,
+        "OPHELIAN_MODEL_PATH": model_dir,
+    }
+    if baseline_in_container:
+        env["OPHELIAN_DRIFT_BASELINE_PATH"] = baseline_in_container
+        env["OPHELIAN_DRIFT_ENDPOINT"] = node.name
+        env["OPHELIAN_DRIFT_WINDOW_SIZE"] = str(node.drift_window_size)
+        if node.drift_stride is not None:
+            env["OPHELIAN_DRIFT_STRIDE"] = str(node.drift_stride)
+        env["OPHELIAN_DRIFT_TEST"] = node.drift_test
+        env["OPHELIAN_DRIFT_THRESHOLD"] = str(node.drift_threshold)
+    return env
+
+
+def _capture_training_baseline(
+    *,
+    node: Train,
+    adapter: Any,
+    model: Any,
+    dataset: Mapping[str, Any],
+    step_dir: Path,
+) -> Path | None:
+    """Snapshot the training distribution as a drift baseline (Task #30).
+
+    Best-effort: if the dataset shape is unfamiliar (rows that are
+    not dicts/lists or features without names) the function returns
+    ``None`` and training still succeeds — drift is opt-in and a
+    missing baseline simply means no monitor will attach later.
+    """
+    from ophelian.observability.drift import Baseline
+
+    rows = dataset.get("X")
+    if not rows:
+        return None
+    feature_samples: dict[str, list[Any]] = {}
+    if isinstance(rows[0], Mapping):
+        keys = list(rows[0].keys())
+        for k in keys:
+            feature_samples[k] = [row.get(k) for row in rows if isinstance(row, Mapping)]
+    elif isinstance(rows[0], (list, tuple)):
+        width = len(rows[0])
+        names = (
+            list(node.baseline_features)
+            if node.baseline_features
+            else [f"f{i}" for i in range(width)]
+        )
+        for i, name in enumerate(names[:width]):
+            feature_samples[name] = [row[i] for row in rows if i < len(row)]
+    else:
+        return None
+    if node.baseline_features is not None:
+        feature_samples = {
+            k: v for k, v in feature_samples.items() if k in set(node.baseline_features)
+        }
+    prediction_samples: list[Any] | None = None
+    try:
+        preds = adapter.predict(model, rows)
+        if isinstance(preds, (list, tuple)):
+            prediction_samples = [p for p in preds if not isinstance(p, (list, tuple, Mapping))]
+            if not prediction_samples:
+                prediction_samples = None
+    except Exception:  # pragma: no cover - defensive: prediction baseline is optional
+        prediction_samples = None
+    baseline = Baseline.from_samples(
+        feature_samples=feature_samples or None,
+        prediction_samples=prediction_samples,
+        metadata={
+            "framework": node.framework,
+            "model": node.model,
+            "n_samples": len(rows),
+            "captured_by": "standalone._handle_train",
+        },
+    )
+    out = step_dir / "baseline.json"
+    return baseline.save(out)
 
 
 def _compute_metrics(

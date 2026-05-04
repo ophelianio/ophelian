@@ -75,6 +75,19 @@ class Train(Node):
     output: str = "model"
     """Logical artifact name the trained model is written to."""
 
+    capture_baseline: bool = False
+    """Snapshot the training feature + prediction distributions as a
+    drift-detection baseline artifact (Task #30). When ``True`` the
+    standalone provider writes ``baseline.json`` next to the model and
+    publishes it as the ``baseline`` artifact key — a downstream
+    :class:`Deploy` node with ``drift_baseline="auto"`` will pick it
+    up and attach drift monitors to the served endpoint automatically.
+    """
+
+    baseline_features: tuple[str, ...] | None = None
+    """Optional explicit feature subset to capture in the baseline.
+    ``None`` (default) captures every column the trainer sees."""
+
     @field_validator("framework")
     @classmethod
     def _normalise_framework(cls, value: str) -> str:
@@ -144,6 +157,19 @@ class Deploy(Node):
     port: int = Field(default=8000, ge=1, le=65535)
     replicas: int = Field(default=1, ge=1)
     autoscale: bool = False
+
+    drift_baseline: str | None = None
+    """Drift baseline source (Task #30). ``None`` (default) disables
+    drift hooks. ``"auto"`` resolves to the ``baseline`` artifact
+    produced by the upstream :class:`Train` step (which must have
+    ``capture_baseline=True``). Any other string is treated as an
+    explicit filesystem path to a ``baseline.json``.
+    """
+
+    drift_window_size: int = Field(default=200, ge=2)
+    drift_stride: int | None = None
+    drift_test: Literal["ks", "chi2", "psi"] = "ks"
+    drift_threshold: float = Field(default=0.05, gt=0.0)
 
     @model_validator(mode="after")
     def _wire_model_dependency(self) -> Deploy:

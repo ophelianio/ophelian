@@ -194,6 +194,12 @@ def build_app(
     framework: str,
     model_path: str | Path,
     enable_prometheus: bool = False,
+    drift_baseline_path: str | Path | None = None,
+    drift_endpoint: str | None = None,
+    drift_window_size: int = 200,
+    drift_stride: int | None = None,
+    drift_test: str = "ks",
+    drift_threshold: float = 0.05,
 ) -> FastAPI:
     """Construct a FastAPI app that serves the model under `model_path`.
 
@@ -268,6 +274,38 @@ def build_app(
     if enable_prometheus:
         _maybe_install_prometheus(app)
 
+    # Drift hooks (Task #30): when a baseline path is provided, load
+    # it and attach the canonical monitor pair to ``app.state`` so the
+    # ``/predict`` route can feed observations on every request. We
+    # do this here (rather than as a follow-up call from each
+    # provider) so any caller of ``build_app`` gets the same opt-in
+    # surface for free.
+    if drift_baseline_path is not None:
+        from typing import cast
+
+        from ophelian.observability.drift import (
+            Baseline,
+            TestName,
+            attach_drift_monitors,
+            build_monitors_from_baseline,
+        )
+
+        baseline = Baseline.load(drift_baseline_path)
+        data_monitor, prediction_monitor = build_monitors_from_baseline(
+            baseline,
+            model_id=str(model_path),
+            endpoint=drift_endpoint,
+            window_size=drift_window_size,
+            stride=drift_stride,
+            test=cast(TestName, drift_test),
+            threshold=drift_threshold,
+        )
+        attach_drift_monitors(
+            app,
+            data_monitor=data_monitor,
+            prediction_monitor=prediction_monitor,
+        )
+
     # Expose the framework name as a span attribute on every span the
     # caller creates inside a request handler — useful for downstream
     # consumers that fan out by ML framework.
@@ -284,14 +322,29 @@ def build_app(
         # work — the difference vs ``ophelian.serve.latency`` is the
         # HTTP / serialization overhead an SRE wants to alert on
         # independently.
+        inputs = payload.get("inputs")
         t0 = time.monotonic()
-        prediction = adapter.predict(model, payload.get("inputs"))
+        prediction = adapter.predict(model, inputs)
         request.state.inference_duration_s = time.monotonic() - t0
         tokens_in, tokens_out = extract_token_usage(prediction, payload)
         if tokens_in is not None:
             request.state.tokens_in = tokens_in
         if tokens_out is not None:
             request.state.tokens_out = tokens_out
+        # Drift hooks (Task #30) — attribute reads are O(1) when no
+        # monitor is attached, so users who do not opt in pay nothing.
+        # Both observation calls are wrapped in suppress() because a
+        # buggy monitor must never break the serve hot path.
+        import contextlib as _contextlib
+
+        data_monitor = getattr(app.state, "ophelian_data_drift_monitor", None)
+        if data_monitor is not None:
+            with _contextlib.suppress(Exception):  # pragma: no cover - defensive
+                data_monitor.observe(inputs)
+        prediction_monitor = getattr(app.state, "ophelian_prediction_drift_monitor", None)
+        if prediction_monitor is not None:
+            with _contextlib.suppress(Exception):  # pragma: no cover - defensive
+                prediction_monitor.observe(prediction)
         return {"prediction": prediction}
 
     return app
@@ -316,10 +369,25 @@ def app_from_env() -> FastAPI:
             "environment variables to be set."
         )
     enable_prom = _truthy_env(os.environ.get("OPHELIAN_PROMETHEUS"))
+    # Drift hooks (Task #30) — env-driven so the container deploy
+    # path has parity with the in-process ``build_app`` kwargs.
+    baseline_path = os.environ.get("OPHELIAN_DRIFT_BASELINE_PATH") or None
+    drift_endpoint = os.environ.get("OPHELIAN_DRIFT_ENDPOINT") or None
+    window_size = int(os.environ.get("OPHELIAN_DRIFT_WINDOW_SIZE", "200"))
+    stride_env = os.environ.get("OPHELIAN_DRIFT_STRIDE")
+    stride = int(stride_env) if stride_env else None
+    test = os.environ.get("OPHELIAN_DRIFT_TEST", "ks")
+    threshold = float(os.environ.get("OPHELIAN_DRIFT_THRESHOLD", "0.05"))
     return build_app(
         framework=framework,
         model_path=model_path,
         enable_prometheus=enable_prom,
+        drift_baseline_path=baseline_path,
+        drift_endpoint=drift_endpoint,
+        drift_window_size=window_size,
+        drift_stride=stride,
+        drift_test=test,
+        drift_threshold=threshold,
     )
 
 

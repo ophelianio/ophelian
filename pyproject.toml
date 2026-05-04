@@ -101,6 +101,20 @@ otel = [
     "opentelemetry-exporter-prometheus>=0.46b0",
     "prometheus_client>=0.20",
 ]
+drift = [
+    # SciPy + NumPy are hard dependencies of the default
+    # ScipyDetector used by the Task #30 drift hooks (KS / chi2 /
+    # PSI). They are pinned in this extra so installing
+    # ``ophelian[drift]`` is a complete, fail-fast install: the
+    # detector either works on every supported test, or import
+    # fails immediately at app construction with a clear error.
+    "scipy>=1.11",
+    "numpy>=1.26",
+    # Evidently is the optional richer-test-catalogue backend.
+    # Ophelian falls back to ScipyDetector when Evidently is not
+    # importable, so the extra remains useful even without it.
+    "evidently>=0.4",
+]
 all = [
     "torch>=2.2",
     "transformers>=4.40",

@@ -449,9 +449,13 @@ merging until a code owner approves it.
 Copyright © 2024–2026 Luis Falva and the Ophelian contributors.
 
 Licensed under the **Apache License, Version 2.0** — see
-[`LICENSE`](LICENSE) for the full text. A `NOTICE` file enumerating
-attributions for redistributed third-party components is planned
-alongside the next packaging audit.
+[`LICENSE`](LICENSE) for the full text. Attributions for the
+third-party components Ophelian declares as runtime / optional
+dependencies (PyTorch, HuggingFace Transformers, scikit-learn,
+XGBoost, boto3 / botocore, the google-cloud-* SDKs, the azure-* SDKs,
+pydantic, FastAPI, OpenTelemetry, etc.) are enumerated in
+[`NOTICE`](NOTICE), which ships in both the sdist and the wheel
+on PyPI.
 
 You may not use this project except in compliance with the License.
 Unless required by applicable law or agreed to in writing, software

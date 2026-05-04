@@ -1,0 +1,109 @@
+Ophelian
+Copyright 2024-2026 Luis Falva and the Ophelian contributors.
+
+This product is licensed under the Apache License, Version 2.0
+(see the LICENSE file in the root of this distribution for the
+full text of the license).
+
+================================================================
+Third-party components
+================================================================
+
+Ophelian declares — and, for some install profiles, transitively
+exercises — the following third-party Python distributions. None of
+them are vendored into the Ophelian source tree; they are pulled in
+by `pip` / `uv` from PyPI at install time according to the extras the
+end user selects (`pip install ophelian[aws]`, `[gcp]`, `[azure]`,
+`[pytorch]`, `[huggingface]`, `[sklearn]`, `[xgboost]`, `[otel]`,
+`[all]`, etc.). They are listed here so that downstream redistributors
+and enterprise consumers have a single place to audit upstream
+attributions, copyrights, and license terms.
+
+Each entry is of the form:
+
+    <project>  --  <upstream license, SPDX id>  --  <upstream copyright>
+
+For the canonical license text of each component, refer to that
+project's own LICENSE / NOTICE files as published on PyPI or the
+project's source repository.
+
+----------------------------------------------------------------
+Core runtime dependencies
+----------------------------------------------------------------
+
+pydantic        --  MIT             --  Copyright (c) Samuel Colvin and other Pydantic contributors
+typer           --  MIT             --  Copyright (c) Sebastian Ramirez
+rich            --  MIT             --  Copyright (c) Will McGugan
+docker          --  Apache-2.0      --  Copyright (c) Docker, Inc. and Docker SDK for Python contributors
+fastapi         --  MIT             --  Copyright (c) Sebastian Ramirez
+uvicorn         --  BSD-3-Clause    --  Copyright (c) Encode OSS Ltd. and contributors
+httpx           --  BSD-3-Clause    --  Copyright (c) Encode OSS Ltd. and contributors
+cloudpickle     --  BSD-3-Clause    --  Copyright (c) Cloudpickle developers
+
+----------------------------------------------------------------
+Optional: ML adapters ([pytorch], [huggingface], [sklearn], [xgboost])
+----------------------------------------------------------------
+
+torch              --  BSD-3-Clause  --  Copyright (c) Meta Platforms, Inc. and affiliates
+transformers       --  Apache-2.0    --  Copyright (c) HuggingFace Inc. team
+scikit-learn       --  BSD-3-Clause  --  Copyright (c) 2007-2024 The scikit-learn developers
+joblib             --  BSD-3-Clause  --  Copyright (c) 2008-2021, The joblib developers
+xgboost            --  Apache-2.0    --  Copyright (c) DMLC / XGBoost contributors
+
+----------------------------------------------------------------
+Optional: AWS environment ([aws], [eks])
+----------------------------------------------------------------
+
+boto3              --  Apache-2.0    --  Copyright (c) Amazon.com, Inc. or its affiliates
+botocore           --  Apache-2.0    --  Copyright (c) Amazon.com, Inc. or its affiliates
+paramiko           --  LGPL-2.1      --  Copyright (c) Jeff Forcier and contributors
+kubernetes         --  Apache-2.0    --  Copyright (c) The Kubernetes Authors
+
+----------------------------------------------------------------
+Optional: GCP environment ([gcp], [gke])
+----------------------------------------------------------------
+
+google-cloud-storage     --  Apache-2.0  --  Copyright (c) Google LLC
+google-cloud-compute     --  Apache-2.0  --  Copyright (c) Google LLC
+google-cloud-container   --  Apache-2.0  --  Copyright (c) Google LLC
+google-auth              --  Apache-2.0  --  Copyright (c) Google LLC
+
+----------------------------------------------------------------
+Optional: Azure environment ([azure], [aks])
+----------------------------------------------------------------
+
+azure-identity                  --  MIT  --  Copyright (c) Microsoft Corporation
+azure-mgmt-compute              --  MIT  --  Copyright (c) Microsoft Corporation
+azure-mgmt-network              --  MIT  --  Copyright (c) Microsoft Corporation
+azure-mgmt-resource             --  MIT  --  Copyright (c) Microsoft Corporation
+azure-mgmt-containerservice     --  MIT  --  Copyright (c) Microsoft Corporation
+azure-storage-blob              --  MIT  --  Copyright (c) Microsoft Corporation
+
+----------------------------------------------------------------
+Optional: OpenTelemetry ([otel])
+----------------------------------------------------------------
+
+opentelemetry-api  --  Apache-2.0  --  Copyright (c) The OpenTelemetry Authors
+opentelemetry-sdk  --  Apache-2.0  --  Copyright (c) The OpenTelemetry Authors
+
+----------------------------------------------------------------
+Notes
+----------------------------------------------------------------
+
+* The list above tracks declared dependencies in `pyproject.toml`
+  (core + extras). Transitive dependencies brought in indirectly are
+  not enumerated here; consumers concerned with the full transitive
+  surface should run `pip-audit`, `uv export --format requirements-txt`,
+  or an SBOM generator (e.g. `cyclonedx-py`) against their resolved
+  environment.
+
+* `paramiko` is LGPL-2.1; it is only pulled in when the user installs
+  the `[aws]` extra (used for SSH-based bootstrapping of EC2 nodes).
+  Redistributors who need to avoid LGPL components can install
+  Ophelian with the `[eks]` extra instead, which uses the Kubernetes
+  client path and does not require `paramiko`.
+
+* This NOTICE file is human-curated and audited as part of the
+  release checklist. See `scripts/audit_notice.py` for the helper
+  that cross-references the active set of declared dependencies
+  against this file and fails when they drift.

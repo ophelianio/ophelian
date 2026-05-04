@@ -483,7 +483,6 @@
             "fillOpacity": 30,
             "lineWidth": 2
           },
-          "max": 1,
           "min": 0,
           "thresholds": {
             "mode": "absolute",

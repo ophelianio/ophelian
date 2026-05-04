@@ -461,9 +461,9 @@ def run(spec_path: Path) -> int:
     from ophelian.observability.otel import step_span
 
     step_name = (spec.get("node", {}) or {}).get("name") or kind
-    # Forward-compatible: the cloud drivers will start populating
-    # ``spec["context"]`` when the cost ledger task lands; until then
-    # workers emit step events without a context dict.
+    # ``spec["context"]`` is the opaque dict propagated from
+    # ``Pipeline.context`` by the cloud/container drivers' step-spec
+    # encoders. May be absent (older specs) or explicitly null.
     step_context = spec.get("context") if isinstance(spec.get("context"), dict) else None
     step_ctx = step_span(
         step_name=step_name,

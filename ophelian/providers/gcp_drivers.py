@@ -406,6 +406,7 @@ def _encode_step_spec(request: StepRequest) -> str:
         "upstream_info": request.upstream_info,
         "resume": request.resume,
         "resume_from": request.resume_from,
+        "context": dict(request.context) if request.context else None,
     }
     return base64.b64encode(json.dumps(spec).encode("utf-8")).decode("ascii")
 

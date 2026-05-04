@@ -85,6 +85,10 @@ class StepRequest:
     snapshot. Set by ``AWSProvider`` when retrying an interrupted Train
     step so the worker's ``step_runner`` can pre-load weights and the
     PyTorch adapter can pick up at the last completed epoch."""
+    context: dict[str, Any] | None = None
+    """Opaque context dict propagated from ``Pipeline.context``. Encoded
+    into the step spec the worker reads so cloud/container-emitted
+    lifecycle events carry the same labels as in-process events."""
 
 
 @dataclass
@@ -1107,6 +1111,8 @@ def _encode_step_spec(request: StepRequest) -> str:
     }
     if request.resume_from:
         spec["resume_from"] = request.resume_from
+    if request.context:
+        spec["context"] = dict(request.context)
     return base64.b64encode(json.dumps(spec).encode("utf-8")).decode("ascii")
 
 

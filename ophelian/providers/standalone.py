@@ -256,7 +256,10 @@ class StandaloneProvider(Provider):
         run_id_for_span = getattr(self, "_run_id", None) or pipeline.name
         # Propagate the pipeline's opaque context dict through every
         # emitted step event so subscribers see consistent labels.
+        # Stash it on the instance too so ``_run_step_in_container``
+        # can encode it into the worker's ``step.json``.
         pipeline_context = getattr(pipeline, "context", None)
+        self._current_pipeline_context = pipeline_context
         try:
             for step in plan.steps:
                 _step_t0 = time.monotonic()
@@ -635,11 +638,19 @@ class StandaloneProvider(Provider):
                 for k, v in upstream_artifacts.items()
             }
 
-        spec = {
+        spec: dict[str, Any] = {
             "kind": kind,
             "node": node.model_dump(mode="json"),
             "artifacts": rewritten_artifacts,
         }
+        # Propagate the owning pipeline's context dict into the
+        # container's step spec so the in-container ``step_runner``
+        # tags the lifecycle events it emits with the same labels as
+        # in-process execution. ``_current_pipeline_context`` is set
+        # by ``StandaloneProvider.run`` for the duration of the run.
+        pipeline_context = getattr(self, "_current_pipeline_context", None)
+        if pipeline_context:
+            spec["context"] = dict(pipeline_context)
         spec_path = step_dir / "step.json"
         spec_path.write_text(json.dumps(spec, default=str))
 

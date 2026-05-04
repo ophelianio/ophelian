@@ -282,6 +282,7 @@ class AWSProvider(Provider):
                     upstream_info={dep: info_index.get(dep, {}) for dep in step.depends_on},
                     resume=step.name == resume_target,
                     resume_from=step_resume_from,
+                    context=getattr(pipeline, "context", None),
                 )
                 _step_t0 = time.monotonic()
                 try:

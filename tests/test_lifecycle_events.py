@@ -448,3 +448,166 @@ def test_spot_interruption_received_fires_on_rising_edge(
     monitor.check()
     spot_again = [e for e in captured if isinstance(e, SpotInterruptionReceived)]
     assert len(spot_again) == 1
+
+
+# ----------------------------------------------------------------------
+# Context propagation across cloud / container step-spec encoders
+# ----------------------------------------------------------------------
+
+
+def _make_data_request(context: dict[str, Any] | None) -> Any:
+    """Build a minimal :class:`StepRequest` for encoder round-trip tests."""
+    from ophelian.providers.aws_drivers import StepRequest
+
+    data = Data(
+        name="ds",
+        source="memory://toy",
+        format="inline",
+        options={"X": [[1.0, 2.0]], "y": [0, 1]},
+    )
+    return StepRequest(
+        run_id="run-123",
+        pipeline_name="cloud-test",
+        step_name="ds",
+        kind="data",
+        node=data,
+        context=context,
+    )
+
+
+@pytest.mark.parametrize(
+    "encoder_module",
+    [
+        "ophelian.providers.aws_drivers",
+        "ophelian.providers.gcp_drivers",
+        "ophelian.providers.azure_drivers",
+    ],
+)
+def test_step_spec_encoders_roundtrip_context(encoder_module: str) -> None:
+    """Every cloud driver's ``_encode_step_spec`` must persist
+    ``request.context`` so the worker's ``step_runner`` can tag
+    lifecycle events with it."""
+    import base64
+    import importlib
+    import json as _json
+
+    mod = importlib.import_module(encoder_module)
+    ctx = {"tenant_id": "acme", "trace_id": "xyz"}
+    request = _make_data_request(ctx)
+    encoded = mod._encode_step_spec(request)
+    decoded = _json.loads(base64.b64decode(encoded).decode("utf-8"))
+    assert decoded["context"] == ctx, encoder_module
+
+
+@pytest.mark.parametrize(
+    "encoder_module",
+    [
+        "ophelian.providers.aws_drivers",
+        "ophelian.providers.gcp_drivers",
+        "ophelian.providers.azure_drivers",
+    ],
+)
+def test_step_spec_encoders_omit_or_null_context_when_missing(
+    encoder_module: str,
+) -> None:
+    """When the pipeline has no context, the encoded spec must either
+    omit the key or set it to ``None`` — never crash and never invent
+    data — so older specs/workers stay compatible."""
+    import base64
+    import importlib
+    import json as _json
+
+    mod = importlib.import_module(encoder_module)
+    request = _make_data_request(None)
+    decoded = _json.loads(base64.b64decode(mod._encode_step_spec(request)).decode("utf-8"))
+    assert decoded.get("context") in (None,), encoder_module
+
+
+def test_step_runner_emits_events_with_context(
+    captured: list[LifecycleEvent], tmp_path: Path
+) -> None:
+    """End-to-end: write a step spec containing ``context`` to disk,
+    invoke ``step_runner.run``, and assert every emitted lifecycle
+    event carries the same context dict."""
+    import json as _json
+
+    from ophelian.runtime import step_runner
+
+    ctx = {"tenant_id": "acme", "env": "prod"}
+    spec = {
+        "kind": "data",
+        "node": {
+            "name": "ds",
+            "source": "memory://toy",
+            "format": "inline",
+            "options": {"X": [[1.0, 2.0]], "y": [0, 1]},
+        },
+        "artifacts": {},
+        "run_id": "run-runner",
+        "context": ctx,
+    }
+    spec_path = tmp_path / "step.json"
+    spec_path.write_text(_json.dumps(spec))
+    rc = step_runner.run(spec_path)
+    assert rc == 0
+    step_events = [
+        e
+        for e in captured
+        if isinstance(e, (StepStarted, StepCompleted, StepFailed))
+    ]
+    assert step_events, [type(e).__name__ for e in captured]
+    for e in step_events:
+        assert e.context == ctx, type(e).__name__
+
+
+def test_standalone_provider_threads_context_to_container_spec(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The container path of :class:`StandaloneProvider` must write
+    ``context`` into ``step.json`` so the worker's ``step_runner``
+    sees it (verified end-to-end above)."""
+    import json as _json
+
+    from ophelian.providers import standalone as _standalone
+
+    captured_specs: list[dict[str, Any]] = []
+    real_writer = Path.write_text
+
+    def _spy_write_text(self: Path, data: str, *args: Any, **kwargs: Any) -> int:
+        if self.name == "step.json":
+            captured_specs.append(_json.loads(data))
+        return real_writer(self, data, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "write_text", _spy_write_text)
+
+    from ophelian.providers.docker_engine import FakeDockerEngine
+
+    provider = _standalone.StandaloneProvider(
+        local=True,
+        container=True,
+        workspace=tmp_path,
+        docker_engine=FakeDockerEngine(),
+    )
+    provider._current_pipeline_context = {"tenant_id": "acme"}
+
+    node = Data(
+        name="ds",
+        source="memory://toy",
+        format="inline",
+        options={"X": [[1.0, 2.0]], "y": [0, 1]},
+    )
+    # Skip the runtime-image build — we don't need a real image to
+    # write step.json (the only thing this test inspects).
+    monkeypatch.setattr(provider, "_ensure_runtime_image", lambda: None)
+
+    step_dir = tmp_path / "ds"
+    step_dir.mkdir(parents=True, exist_ok=True)
+    # We don't care about a successful container run here — the test
+    # only verifies the spec written before the container is invoked.
+    import contextlib as _contextlib
+
+    with _contextlib.suppress(Exception):
+        provider._run_step_in_container(node, step_dir, {})
+
+    assert captured_specs, "step.json was not written"
+    assert captured_specs[-1].get("context") == {"tenant_id": "acme"}

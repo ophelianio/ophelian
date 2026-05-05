@@ -196,7 +196,12 @@ def default_metadata_probe() -> bool:
     try:
         import urllib.request
 
-        with urllib.request.urlopen(SPOT_METADATA_URL, timeout=DEFAULT_PROBE_TIMEOUT) as resp:
+        # ``SPOT_METADATA_URL`` is a module-level constant pointing at the
+        # EC2 instance metadata service (http://169.254.169.254/...). The
+        # scheme is fixed and not derived from user input.
+        with urllib.request.urlopen(  # nosec B310
+            SPOT_METADATA_URL, timeout=DEFAULT_PROBE_TIMEOUT
+        ) as resp:
             return bool(resp.status == 200)
     except Exception:
         return False

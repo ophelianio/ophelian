@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import tempfile
 from pathlib import Path
 from typing import Any, ClassVar
 
@@ -36,11 +37,18 @@ class HuggingFaceAdapter(ModelAdapter):
             TrainingArguments,
         )
 
-        tokenizer = AutoTokenizer.from_pretrained(model)
-        net = AutoModelForCausalLM.from_pretrained(model, **hyperparameters)
+        # Revision pinning is the caller's responsibility: ``model`` is a
+        # user-supplied repo ID (or local path) and Ophelian must not silently
+        # override it. Document that users should pin via env vars on the Hub.
+        tokenizer = AutoTokenizer.from_pretrained(model)  # nosec B615
+        net = AutoModelForCausalLM.from_pretrained(model, **hyperparameters)  # nosec B615
         if data is None:
             return {"model": net, "tokenizer": tokenizer}
-        out_dir = str(checkpoint_dir) if checkpoint_dir is not None else "/tmp/ophelian-hf"
+        out_dir = (
+            str(checkpoint_dir)
+            if checkpoint_dir is not None
+            else str(Path(tempfile.gettempdir()) / "ophelian-hf")
+        )
         args = TrainingArguments(
             output_dir=out_dir,
             num_train_epochs=epochs or 1,
@@ -64,8 +72,10 @@ class HuggingFaceAdapter(ModelAdapter):
     def load(self, path: Path) -> Any:
         from transformers import AutoModelForCausalLM, AutoTokenizer
 
-        tokenizer = AutoTokenizer.from_pretrained(path)
-        net = AutoModelForCausalLM.from_pretrained(path)
+        # ``path`` is a local directory written by ``save`` above; no
+        # network download happens here, so revision pinning does not apply.
+        tokenizer = AutoTokenizer.from_pretrained(path)  # nosec B615
+        net = AutoModelForCausalLM.from_pretrained(path)  # nosec B615
         return {"model": net, "tokenizer": tokenizer}
 
     def predict(self, model: Any, payload: Any) -> Any:

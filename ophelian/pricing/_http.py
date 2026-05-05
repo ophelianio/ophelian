@@ -26,9 +26,15 @@ def _http_get_json(url: str, *, timeout: float = 8.0) -> Any:
         from urllib.request import Request, urlopen
     except ImportError:  # pragma: no cover - urllib is stdlib
         return None
+    # Reject non-HTTP(S) schemes defensively: while callers only pass URLs
+    # from internal pricing-source constants, restricting the scheme here
+    # closes the door on accidental ``file://`` / custom-scheme regressions.
+    if not (url.startswith("https://") or url.startswith("http://")):
+        logger.debug("Live pricing GET %s rejected: only http(s) is allowed", url)
+        return None
     try:
         request = Request(url, headers={"Accept": "application/json"})
-        with urlopen(request, timeout=timeout) as response:
+        with urlopen(request, timeout=timeout) as response:  # nosec B310
             raw = response.read()
     except (URLError, TimeoutError, ValueError, OSError) as exc:
         logger.debug("Live pricing GET %s failed: %s", url, exc)

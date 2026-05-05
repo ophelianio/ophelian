@@ -51,7 +51,10 @@ class PyTorchAdapter(ModelAdapter):
         if resume_from is not None:
             ckpt = resume_from / "model.pt" if resume_from.is_dir() else resume_from
             if ckpt.exists():
-                loaded = torch.load(ckpt, map_location="cpu", weights_only=False)
+                # Checkpoint paths come from the framework's own checkpoint
+                # directory (written by ``save`` below). ``weights_only=True``
+                # cannot be used because ``save`` may persist a full module.
+                loaded = torch.load(ckpt, map_location="cpu", weights_only=False)  # nosec B614
                 if isinstance(loaded, dict) and "state_dict" in loaded:
                     net.load_state_dict(loaded["state_dict"])
                     start_epoch = int(loaded.get("epoch", 0))
@@ -131,7 +134,9 @@ class PyTorchAdapter(ModelAdapter):
         import torch
 
         target = path / "model.pt"
-        model = torch.load(target, map_location="cpu", weights_only=False)
+        # ``target`` was produced by this adapter's ``save`` (full-module
+        # ``torch.save``); reading it back must allow arbitrary objects.
+        model = torch.load(target, map_location="cpu", weights_only=False)  # nosec B614
         if hasattr(model, "eval"):
             model.eval()
         return model

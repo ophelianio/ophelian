@@ -782,7 +782,7 @@ class StandaloneProvider(Provider):
                 "--factory",
                 "ophelian.runtime.fastapi_runtime:app_from_env",
                 "--host",
-                "0.0.0.0",
+                "0.0.0.0",  # nosec B104  # uvicorn inside the container; host port is mapped explicitly
                 "--port",
                 str(container_port),
             ],
@@ -838,7 +838,11 @@ class StandaloneProvider(Provider):
     # ------------------------------------------------------------------
 
     def serve(
-        self, step_name: str, *, host: str = "0.0.0.0", port: int = 8000
+        self,
+        step_name: str,
+        *,
+        host: str = "0.0.0.0",  # nosec B104  # serving entrypoint; binding all interfaces is intentional
+        port: int = 8000,
     ) -> None:  # pragma: no cover
         import uvicorn
 
@@ -855,7 +859,7 @@ class StandaloneProvider(Provider):
             "--factory",
             "ophelian.runtime.fastapi_runtime:build_app",
             "--host",
-            "0.0.0.0",
+            "0.0.0.0",  # nosec B104  # uvicorn subprocess for local serving
             "--port",
             str(node.port),
         ]

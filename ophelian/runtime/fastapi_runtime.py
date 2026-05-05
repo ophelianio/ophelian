@@ -408,7 +408,12 @@ class FastAPIRuntime:
             enable_prometheus=self.enable_prometheus,
         )
 
-    def serve(self, *, host: str = "0.0.0.0", port: int = 8000) -> None:  # pragma: no cover
+    def serve(
+        self,
+        *,
+        host: str = "0.0.0.0",  # nosec B104  # serving entrypoint; binding all interfaces is intentional
+        port: int = 8000,
+    ) -> None:  # pragma: no cover
         import uvicorn
 
         uvicorn.run(self.app(), host=host, port=port)

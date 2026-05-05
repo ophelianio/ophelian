@@ -1,17 +1,17 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/ophelianio/ophelian/v1.0.1/docs/assets/ophelian.png" alt="Ophelian" width="96" height="96">
+  <img src="https://raw.githubusercontent.com/ophelianio/ophelian/dev/docs/assets/ophelian.png" alt="Ophelian" width="96" height="96">
 </p>
 
 <h1 align="center">Ophelian</h1>
 
 <p align="center">
-  <strong>Write your ML pipeline once. Run it anywhere. Pay the lowest GPU price across AWS, GCP, and Azure.</strong>
+  <strong>Write your ML pipeline once. Run it anywhere. Route to the cheapest available GPU across AWS, GCP, and Azure.</strong>
 </p>
 
 <p align="center">
   <a href="https://pypi.org/project/ophelian/"><img src="https://img.shields.io/pypi/v/ophelian.svg" alt="PyPI"></a>
   <a href="https://pypi.org/project/ophelian/"><img src="https://img.shields.io/pypi/pyversions/ophelian.svg" alt="Python versions"></a>
-  <a href="https://github.com/ophelianio/ophelian/blob/v1.0.1/LICENSE"><img src="https://img.shields.io/pypi/l/ophelian.svg" alt="License"></a>
+  <a href="https://github.com/ophelianio/ophelian/blob/v1.0.1/LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue.svg" alt="License: Apache 2.0"></a>
   <a href="https://github.com/ophelianio/ophelian/actions/workflows/ci.yml"><img src="https://github.com/ophelianio/ophelian/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://ophelianio.github.io/ophelian/"><img src="https://img.shields.io/badge/docs-online-4baaaa.svg" alt="Docs"></a>
 </p>

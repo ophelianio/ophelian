@@ -16,11 +16,23 @@ new version).
 
 ### Fixed
 
-- **README on PyPI** — image and 16 internal links now render correctly
-  on <https://pypi.org/project/ophelian/> by switching every relative
-  path to an absolute `raw.githubusercontent.com` / `github.com/.../blob`
-  URL pinned to the `v1.0.1` tag. Relative links don't resolve on PyPI's
-  rendered README.
+- **README hero image** — the logo was 404-ing on the GitHub repo
+  view because the previous patch pinned the `<img src>` to the
+  `v1.0.1` tag, which does not exist until this release is published
+  (chicken-and-egg). Switched to a branch-based URL on `dev` so the
+  image renders both on the GitHub repo view and on the rendered
+  PyPI page.
+- **License badge** — `https://img.shields.io/pypi/l/ophelian.svg`
+  was rendering as "Free for non-commercial use" because shields.io
+  cannot parse SPDX identifiers like `Apache-2.0` and silently falls
+  back to a generic, *misleading* label. Replaced with a static
+  `https://img.shields.io/badge/license-Apache--2.0-blue.svg` so the
+  badge always reads the truth: Apache 2.0.
+- **README on PyPI** — internal links now render correctly on
+  <https://pypi.org/project/ophelian/> by switching every relative
+  path to an absolute `raw.githubusercontent.com` /
+  `github.com/.../blob` URL pinned to the `v1.0.1` tag. Relative
+  links don't resolve on PyPI's rendered README.
 - **LICENSE** — replaced the unedited Apache-2.0 appendix boilerplate
   (`Copyright 2020 Luis Vargas`) with the real line
   `Copyright 2024-2026 Luis Falva and the Ophelian contributors` so it
@@ -40,8 +52,12 @@ new version).
   real `Auto(dry_run=True, providers=[...])` kwargs, instead of
   presenting the env vars as framework features.
 - README tagline tightened: dropped the unverifiable
-  "lowest GPU price on the market" / "ImageNet sub-$0.05/run" claims;
-  positioning is now "across AWS, GCP, Azure".
+  "lowest GPU price on the market" / "ImageNet sub-$0.05/run" claims.
+  New tagline: "Write your ML pipeline once. Run it anywhere. Route
+  to the cheapest available GPU across AWS, GCP, and Azure." —
+  describes what the `Auto()` router actually does (routes to the
+  cheapest available SKU/region) instead of making an absolute
+  market-price claim we cannot prove.
 
 ## [1.0.0] - 2026-05-01
 

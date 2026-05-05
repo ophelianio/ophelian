@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-05-05
+
+No code changes. Patch release whose only purpose is to ship the README
+and LICENSE fixes that landed after 1.0.0 was already on PyPI (the PyPI
+project page is frozen per release, so the only way to refresh it is a
+new version).
+
+### Fixed
+
+- **README on PyPI** — image and 16 internal links now render correctly
+  on <https://pypi.org/project/ophelian/> by switching every relative
+  path to an absolute `raw.githubusercontent.com` / `github.com/.../blob`
+  URL pinned to the `v1.0.1` tag. Relative links don't resolve on PyPI's
+  rendered README.
+- **LICENSE** — replaced the unedited Apache-2.0 appendix boilerplate
+  (`Copyright 2020 Luis Vargas`) with the real line
+  `Copyright 2024-2026 Luis Falva and the Ophelian contributors` so it
+  matches `NOTICE` and `pyproject.toml [project.authors]`.
+
+### Changed
+
+- README hero consolidated (single 96px logo, badges in two centered
+  rows).
+- README install section now lists every extra declared in
+  `pyproject.toml`: `pytorch`, `huggingface`, `sklearn`, `xgboost`,
+  `otel`, `all`, `dev`.
+- README observability example uses the real `StepResult` field name
+  `duration_seconds` instead of the wrong `duration_s`.
+- README + `examples/README.md` now describe `OPHELIAN_DRY_RUN` and
+  `OPHELIAN_PROVIDERS` as a demo-script convenience that maps to the
+  real `Auto(dry_run=True, providers=[...])` kwargs, instead of
+  presenting the env vars as framework features.
+- README tagline tightened: dropped the unverifiable
+  "lowest GPU price on the market" / "ImageNet sub-$0.05/run" claims;
+  positioning is now "across AWS, GCP, Azure".
+
 ## [1.0.0] - 2026-05-01
 
 ### Added — Multi-cloud parity

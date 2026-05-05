@@ -1,0 +1,24 @@
+# Gitleaks configuration for Ophelian.
+#
+# We extend the upstream default ruleset (so we don't lose any
+# coverage) and add a minimal allowlist for known false positives
+# that come from our own security tests.
+#
+# Reference: https://github.com/gitleaks/gitleaks#configuration
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Ignore obvious test fixtures used by Ophelian's own redaction tests."
+
+# `tests/test_security.py` exists specifically to verify that
+# Ophelian's run-summary logger and redaction layer hide secrets.
+# It contains intentionally-shaped placeholder credentials (e.g.
+# `AKIA1234567890ABCDEF`) that are not real and have never been
+# valid. Allowlisting the whole file is safer than maintaining a
+# growing list of inline `# gitleaks:allow` markers and keeps the
+# test fixtures readable.
+paths = [
+  '''tests/test_security\.py''',
+]

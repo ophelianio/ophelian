@@ -18,7 +18,7 @@ private channels documented below.
     Advisory if accepted.
 
 The full policy below is the canonical
-[`SECURITY.md`](https://github.com/LuisFalva/ophelian/blob/main/SECURITY.md)
+[`SECURITY.md`](https://github.com/ophelianio/ophelian/blob/main/SECURITY.md)
 that ships in the repository root, included verbatim so the docs site
 and the repo can never drift apart.
 
@@ -33,8 +33,8 @@ and the repo can never drift apart.
 - [Report a vulnerability privately][advisory-new] (GitHub PVR — preferred)
 - [Security tab on GitHub][security-tab]
 - [Published Security Advisories][advisories]
-- [`SECURITY.md` in the repo](https://github.com/LuisFalva/ophelian/blob/main/SECURITY.md)
+- [`SECURITY.md` in the repo](https://github.com/ophelianio/ophelian/blob/main/SECURITY.md)
 
-[advisory-new]: https://github.com/LuisFalva/ophelian/security/advisories/new
-[security-tab]: https://github.com/LuisFalva/ophelian/security
-[advisories]: https://github.com/LuisFalva/ophelian/security/advisories
+[advisory-new]: https://github.com/ophelianio/ophelian/security/advisories/new
+[security-tab]: https://github.com/ophelianio/ophelian/security
+[advisories]: https://github.com/ophelianio/ophelian/security/advisories

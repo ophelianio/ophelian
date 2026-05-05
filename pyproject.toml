@@ -170,11 +170,11 @@ xgboost = "ophelian.models.xgboost_adapter:XGBoostAdapter"
 # their distribution's pyproject.toml — see CONTRIBUTING.md.
 
 [project.urls]
-Homepage = "https://github.com/LuisFalva/ophelian"
-Documentation = "https://luisfalva.github.io/ophelian/"
-Repository = "https://github.com/LuisFalva/ophelian"
-Issues = "https://github.com/LuisFalva/ophelian/issues"
-Changelog = "https://github.com/LuisFalva/ophelian/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/ophelianio/ophelian"
+Documentation = "https://ophelianio.github.io/ophelian/"
+Repository = "https://github.com/ophelianio/ophelian"
+Issues = "https://github.com/ophelianio/ophelian/issues"
+Changelog = "https://github.com/ophelianio/ophelian/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.wheel]
 packages = ["ophelian"]

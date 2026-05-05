@@ -17,16 +17,16 @@
 
 <!-- Quality -->
 
-[![CI](https://github.com/LuisFalva/ophelian/actions/workflows/ci.yml/badge.svg)](https://github.com/LuisFalva/ophelian/actions/workflows/ci.yml)
-[![CodeQL](https://github.com/LuisFalva/ophelian/actions/workflows/codeql.yml/badge.svg)](https://github.com/LuisFalva/ophelian/actions/workflows/codeql.yml)
-[![Security](https://github.com/LuisFalva/ophelian/actions/workflows/security.yml/badge.svg)](https://github.com/LuisFalva/ophelian/actions/workflows/security.yml)
-[![Docs](https://github.com/LuisFalva/ophelian/actions/workflows/docs.yml/badge.svg)](https://luisfalva.github.io/ophelian/)
+[![CI](https://github.com/ophelianio/ophelian/actions/workflows/ci.yml/badge.svg)](https://github.com/ophelianio/ophelian/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/ophelianio/ophelian/actions/workflows/codeql.yml/badge.svg)](https://github.com/ophelianio/ophelian/actions/workflows/codeql.yml)
+[![Security](https://github.com/ophelianio/ophelian/actions/workflows/security.yml/badge.svg)](https://github.com/ophelianio/ophelian/actions/workflows/security.yml)
+[![Docs](https://github.com/ophelianio/ophelian/actions/workflows/docs.yml/badge.svg)](https://ophelianio.github.io/ophelian/)
 
 <!-- Community -->
 
 [![Code of Conduct](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
-[![Discussions](https://img.shields.io/github/discussions/LuisFalva/ophelian)](https://github.com/LuisFalva/ophelian/discussions)
-[![Issues](https://img.shields.io/github/issues/LuisFalva/ophelian)](https://github.com/LuisFalva/ophelian/issues)
+[![Discussions](https://img.shields.io/github/discussions/ophelianio/ophelian)](https://github.com/ophelianio/ophelian/discussions)
+[![Issues](https://img.shields.io/github/issues/ophelianio/ophelian)](https://github.com/ophelianio/ophelian/issues)
 
 ---
 
@@ -233,23 +233,23 @@ group — see [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## Documentation
 
-Full docs at **<https://luisfalva.github.io/ophelian/>**:
+Full docs at **<https://ophelianio.github.io/ophelian/>**:
 
-- [Quickstart](https://luisfalva.github.io/ophelian/quickstart/)
-- [Concepts](https://luisfalva.github.io/ophelian/concepts/)
+- [Quickstart](https://ophelianio.github.io/ophelian/quickstart/)
+- [Concepts](https://ophelianio.github.io/ophelian/concepts/)
 - Envs:
-  [AWS](https://luisfalva.github.io/ophelian/envs/aws/) ·
-  [GCP](https://luisfalva.github.io/ophelian/envs/gcp/) ·
-  [Azure](https://luisfalva.github.io/ophelian/envs/azure/) ·
-  [Standalone](https://luisfalva.github.io/ophelian/envs/standalone/) ·
-  [Auto](https://luisfalva.github.io/ophelian/envs/auto/)
-- [Cookbook](https://luisfalva.github.io/ophelian/cookbook/) ·
-  [Troubleshooting](https://luisfalva.github.io/ophelian/troubleshooting/)
+  [AWS](https://ophelianio.github.io/ophelian/envs/aws/) ·
+  [GCP](https://ophelianio.github.io/ophelian/envs/gcp/) ·
+  [Azure](https://ophelianio.github.io/ophelian/envs/azure/) ·
+  [Standalone](https://ophelianio.github.io/ophelian/envs/standalone/) ·
+  [Auto](https://ophelianio.github.io/ophelian/envs/auto/)
+- [Cookbook](https://ophelianio.github.io/ophelian/cookbook/) ·
+  [Troubleshooting](https://ophelianio.github.io/ophelian/troubleshooting/)
 
 ## Roadmap
 
 Tracked in [`CHANGELOG.md`](CHANGELOG.md) under `## [Unreleased]`
-and in the [GitHub project board](https://github.com/LuisFalva/ophelian/issues).
+and in the [GitHub project board](https://github.com/ophelianio/ophelian/issues).
 Headline items currently on deck:
 
 - **GKE driver** — production-grade Kubernetes backend for GCP
@@ -288,11 +288,11 @@ Pick the right channel:
 
 | You want to... | Go to |
 |---|---|
-| Ask a usage question | [GitHub Discussions](https://github.com/LuisFalva/ophelian/discussions) |
-| Report a reproducible bug | [Issues → Bug report](https://github.com/LuisFalva/ophelian/issues/new?template=bug_report.yml) |
-| Request a feature | [Issues → Feature request](https://github.com/LuisFalva/ophelian/issues/new?template=feature_request.yml) |
+| Ask a usage question | [GitHub Discussions](https://github.com/ophelianio/ophelian/discussions) |
+| Report a reproducible bug | [Issues → Bug report](https://github.com/ophelianio/ophelian/issues/new?template=bug_report.yml) |
+| Request a feature | [Issues → Feature request](https://github.com/ophelianio/ophelian/issues/new?template=feature_request.yml) |
 | Report a security vulnerability | See [`SECURITY.md`](SECURITY.md) — please **do not** file a public issue |
-| Show what you built with it | [Discussions → Show and tell](https://github.com/LuisFalva/ophelian/discussions/categories/show-and-tell) |
+| Show what you built with it | [Discussions → Show and tell](https://github.com/ophelianio/ophelian/discussions/categories/show-and-tell) |
 
 We follow the
 [Contributor Covenant 2.1](CODE_OF_CONDUCT.md) in every space we
@@ -322,12 +322,12 @@ The full disclosure policy — supported versions, in-scope components,
 response timeline, safe-harbour, and credit process — lives in
 [`SECURITY.md`](SECURITY.md). GitHub auto-detects that file and
 surfaces a **"Report a vulnerability"** button on the repo's
-[Security tab](https://github.com/LuisFalva/ophelian/security).
+[Security tab](https://github.com/ophelianio/ophelian/security).
 
 **How to report (in order of preference):**
 
 1. **GitHub Private Vulnerability Reporting** — open
-   <https://github.com/LuisFalva/ophelian/security/advisories/new>
+   <https://github.com/ophelianio/ophelian/security/advisories/new>
    ("Report a vulnerability" button on the repo's Security tab).
    This is the recommended channel: end-to-end private, no email
    round-trip, and triaged automatically into a GitHub Security
@@ -383,7 +383,7 @@ reports), please cite the specific version you used:
   year      = {2026},
   version   = {1.0.0},
   license   = {Apache-2.0},
-  url       = {https://github.com/LuisFalva/ophelian},
+  url       = {https://github.com/ophelianio/ophelian},
   howpublished = {PyPI: \url{https://pypi.org/project/ophelian/}},
   publisher = {GitHub},
 }
@@ -393,7 +393,7 @@ Both URLs matter: the GitHub repo is the canonical source and issue
 tracker, and the PyPI page is the immutable artifact archive that
 reproducibility tooling resolves against. For other versions, swap
 `version` and check the matching tag at
-<https://github.com/LuisFalva/ophelian/releases> (and the matching
+<https://github.com/ophelianio/ophelian/releases> (and the matching
 release on <https://pypi.org/project/ophelian/#history>).
 
 ## Acknowledgments

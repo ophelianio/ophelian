@@ -6,7 +6,7 @@ description: Release notes for every published version of Ophelian, with links b
 # Changelog
 
 This page mirrors the canonical
-[`CHANGELOG.md`](https://github.com/LuisFalva/ophelian/blob/main/CHANGELOG.md)
+[`CHANGELOG.md`](https://github.com/ophelianio/ophelian/blob/main/CHANGELOG.md)
 that ships in the repository root, included verbatim so the docs site
 and the repo can never drift apart. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
@@ -29,8 +29,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - [GitHub Releases][gh-releases] — signed tarballs, wheels, and auto-generated notes per tag
 - [PyPI project page][pypi] — `pip install ophelian`
-- [`CHANGELOG.md` in the repo](https://github.com/LuisFalva/ophelian/blob/main/CHANGELOG.md)
-- [Compare versions on GitHub](https://github.com/LuisFalva/ophelian/compare)
+- [`CHANGELOG.md` in the repo](https://github.com/ophelianio/ophelian/blob/main/CHANGELOG.md)
+- [Compare versions on GitHub](https://github.com/ophelianio/ophelian/compare)
 
-[gh-releases]: https://github.com/LuisFalva/ophelian/releases
+[gh-releases]: https://github.com/ophelianio/ophelian/releases
 [pypi]: https://pypi.org/project/ophelian/

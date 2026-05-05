@@ -30,9 +30,9 @@ Use one of the private channels below, in order of preference:
 
 1. **GitHub Private Vulnerability Reporting (preferred).**
    Open a private report at
-   <https://github.com/LuisFalva/ophelian/security/advisories/new>
+   <https://github.com/ophelianio/ophelian/security/advisories/new>
    — this is the "Report a vulnerability" button on the repo's
-   [Security tab](https://github.com/LuisFalva/ophelian/security).
+   [Security tab](https://github.com/ophelianio/ophelian/security).
    It is end-to-end private, requires no email round-trip, and
    triages directly into a GitHub Security Advisory if accepted.
 
@@ -70,7 +70,7 @@ keep you updated if something is going to slip.
 | Coordinated fix released for accepted, in-scope reports | targeting **90 days** from triage, sooner for high-severity issues |
 
 After a fix ships, we will publish a
-[GitHub Security Advisory](https://github.com/LuisFalva/ophelian/security/advisories)
+[GitHub Security Advisory](https://github.com/ophelianio/ophelian/security/advisories)
 with a CVE (when applicable), the affected version range, the fixed
 version, and credit to the reporter (unless you have asked to remain
 anonymous).

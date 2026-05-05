@@ -277,9 +277,7 @@ def test_fetch_live_with_meta_keys_match_providers_consulted() -> None:
         f"meta keys must equal providers consulted; got {set(meta.keys())}"
     )
     for value in meta.values():
-        assert DATA_QUALITY_PATTERN.match(value), (
-            f"meta value {value!r} not in vocabulary"
-        )
+        assert DATA_QUALITY_PATTERN.match(value), f"meta value {value!r} not in vocabulary"
 
 
 # --- helpers ----------------------------------------------------------------

@@ -316,9 +316,7 @@ def Auto(
             f", regions={regions!r}. Pricing table last reviewed:"
             f" {os.environ.get('OPHELIAN_PRICING_REVIEW', 'see ophelian.pricing.STATIC_PRICES_LAST_REVIEW')}."
         )
-    decision = RouterDecision(
-        quote=quote, considered=candidates, data_quality=data_quality
-    )
+    decision = RouterDecision(quote=quote, considered=candidates, data_quality=data_quality)
 
     if require_live:
         not_live = {
@@ -337,9 +335,7 @@ def Auto(
 
     # Provenance suffix renders providers in stable alphabetical order
     # so log scrapers and dashboards parse a deterministic format.
-    data_suffix = " ".join(
-        f"{p}={data_quality[p]}" for p in sorted(data_quality)
-    )
+    data_suffix = " ".join(f"{p}={data_quality[p]}" for p in sorted(data_quality))
     logger.info(
         "Auto router selected %s/%s %s @ %.3f USD/h (%s) | data: %s | considered: %d quotes",
         quote.provider,

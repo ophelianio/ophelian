@@ -67,9 +67,7 @@ def fetch_live_with_meta(
     fetched_at = float(cache.get("_fetched_at", 0.0))
     family_upper = gpu_family.upper()
 
-    cache_fresh = (
-        fetched_at > 0.0 and time.time() - fetched_at <= cache_ttl_seconds
-    )
+    cache_fresh = fetched_at > 0.0 and time.time() - fetched_at <= cache_ttl_seconds
     if cache_fresh:
         out: list[PriceQuote] = []
         per_provider: dict[str, list[PriceQuote]] = {p: [] for p in consulted}
@@ -88,10 +86,7 @@ def fetch_live_with_meta(
             per_provider[quote.provider].append(quote)
 
         age_hours = max(0, int((time.time() - fetched_at) // 3600))
-        meta = {
-            p: f"cached@{age_hours}h" if per_provider[p] else "unavailable"
-            for p in consulted
-        }
+        meta = {p: f"cached@{age_hours}h" if per_provider[p] else "unavailable" for p in consulted}
         return out, meta
 
     fetched: dict[str, list[PriceQuote]] = {}

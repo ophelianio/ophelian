@@ -315,9 +315,7 @@ def test_log_line_includes_provenance(
         require_credentials=False,
     )
     selected = [
-        r.getMessage()
-        for r in caplog.records
-        if r.getMessage().startswith("Auto router selected")
+        r.getMessage() for r in caplog.records if r.getMessage().startswith("Auto router selected")
     ]
     assert len(selected) == 1, f"expected one log line, got {selected!r}"
     assert "data: aws=" in selected[0]

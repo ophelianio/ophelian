@@ -21,9 +21,8 @@ import logging
 import re
 from typing import Any
 
-import pytest
-
 import ophelian.pricing
+import pytest
 from ophelian.envs.auto import Auto, AutoRouterError
 from ophelian.pricing import (
     PriceQuote,

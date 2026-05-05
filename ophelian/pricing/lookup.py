@@ -126,4 +126,4 @@ def lookup_cheapest(
 # the wild) that does `monkeypatch.setattr(lookup_mod, "fetch_live", ...)`
 # still finds the symbol — we just don't call it from this module
 # anymore. The new monkeypatch target is ``fetch_live_with_meta``.
-__all__ = ["lookup_cheapest", "lookup_cheapest_with_meta", "fetch_live"]
+__all__ = ["fetch_live", "lookup_cheapest", "lookup_cheapest_with_meta"]

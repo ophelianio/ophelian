@@ -35,7 +35,6 @@ from ophelian.pricing import (
     PriceQuote,
     RouterDecision,
     explain,
-    lookup_cheapest,
     lookup_cheapest_with_meta,
     static_quotes,
 )

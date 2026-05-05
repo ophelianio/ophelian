@@ -16,43 +16,27 @@
   <a href="https://ophelianio.github.io/ophelian/"><img src="https://img.shields.io/badge/docs-online-4baaaa.svg" alt="Docs"></a>
 </p>
 
-<p align="center">
-  <a href="https://github.com/ophelianio/ophelian/actions/workflows/codeql.yml"><img src="https://github.com/ophelianio/ophelian/actions/workflows/codeql.yml/badge.svg" alt="CodeQL"></a>
-  <a href="https://github.com/ophelianio/ophelian/actions/workflows/security.yml"><img src="https://github.com/ophelianio/ophelian/actions/workflows/security.yml/badge.svg" alt="Security"></a>
-  <a href="https://github.com/ophelianio/ophelian/blob/v1.0.1/CODE_OF_CONDUCT.md"><img src="https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg" alt="Code of Conduct"></a>
-  <a href="https://github.com/ophelianio/ophelian/discussions"><img src="https://img.shields.io/github/discussions/ophelianio/ophelian" alt="Discussions"></a>
-</p>
-
 ---
 
 Ophelian is a small, opinionated Python framework for taking ML / AI
 prototypes to production without rewriting them every time the runtime
-changes. You declare a `Pipeline` of nodes (`Data`, `Train`, `Tune`,
-`Eval`, `Deploy`), pick an `env`, and Ophelian compiles + runs it —
-locally inside Docker, on AWS, GCP, or Azure, or routed automatically
-to the cheapest cloud for the GPU you need.
+changes. Declare a `Pipeline`, pick an `env`, and Ophelian compiles +
+runs it — locally in Docker, on AWS, GCP, or Azure, or routed
+automatically to the cheapest cloud for the GPU you need.
 
-## Table of contents
+## Install
 
-- [Hello, pipeline](#hello-pipeline)
-- [Why Ophelian](#why-ophelian)
-- [Install](#install)
-- [Architecture](#architecture)
-- [Envs at a glance](#envs-at-a-glance)
-- [Three demos in three minutes](#three-demos-in-three-minutes)
-- [Use cases](#use-cases)
-- [Observability](#observability)
-- [Compatibility](#compatibility)
-- [Documentation](#documentation)
-- [Roadmap](#roadmap)
-- [Status & versioning](#status--versioning)
-- [Community & support](#community--support)
-- [Governance & maintainers](#governance--maintainers)
-- [Security](#security)
-- [Contributing](#contributing)
-- [Citation](#citation)
-- [Acknowledgments](#acknowledgments)
-- [License](#license)
+```bash
+pip install ophelian                  # core, runs locally
+pip install 'ophelian[aws]'           # + EC2 / S3
+pip install 'ophelian[gcp]'           # + GCE / GCS
+pip install 'ophelian[azure]'         # + Azure VM / Blob
+pip install 'ophelian[huggingface]'   # + Transformers + PyTorch
+pip install 'ophelian[all]'           # every adapter and provider
+```
+
+Python **3.11+**. Full extras list (`pytorch`, `sklearn`, `xgboost`,
+`otel`, ...) in [`pyproject.toml`](https://github.com/ophelianio/ophelian/blob/v1.0.1/pyproject.toml).
 
 ## Hello, pipeline
 
@@ -71,99 +55,19 @@ pipe = Pipeline([
 pipe.run(env=Auto(cheapest_gpu="A100"))
 ```
 
-That's it. The same source runs on your laptop, on EC2 spot, on a GCE
-preemptible VM, or on an Azure Spot VM — Ophelian handles
-checkpointing, artifact persistence (S3 / GCS / Azure Blob),
-structured logs, and a rich summary at the end.
+The same source runs on your laptop, on EC2 spot, on a GCE preemptible
+VM, or on an Azure Spot VM — Ophelian handles checkpointing, artifact
+persistence (S3 / GCS / Azure Blob), structured logs, and a rich
+summary at the end.
 
-## Why Ophelian
-
-| | Ophelian | SageMaker | Vertex AI | Azure ML | Bare cloud SDKs |
-|---|:---:|:---:|:---:|:---:|:---:|
-| Single API across AWS + GCP + Azure | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Write pipeline once, run anywhere | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Auto-router that picks the cheapest GPU | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Spot / preemptible / Azure Spot resume | ✅ | partial | partial | partial | DIY |
-| Local-first dev (Docker, no cloud auth) | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Structured JSON logs + run_id | ✅ | partial | partial | partial | DIY |
-| Apache-2.0, OSS, no vendor SDK lock-in | ✅ | ❌ | ❌ | ❌ | mixed |
-| `pip install` and go | ✅ | ❌ | ❌ | ❌ | partial |
-
-## Install
-
-```bash
-pip install ophelian                  # core, runs locally
-pip install 'ophelian[aws]'           # + EC2 / S3
-pip install 'ophelian[gcp]'           # + GCE / GCS
-pip install 'ophelian[azure]'         # + Azure VM / Blob
-pip install 'ophelian[pytorch]'       # + PyTorch model adapter
-pip install 'ophelian[huggingface]'   # + Transformers + PyTorch
-pip install 'ophelian[sklearn]'       # + scikit-learn adapter
-pip install 'ophelian[xgboost]'       # + XGBoost adapter
-pip install 'ophelian[otel]'          # + OpenTelemetry exporters
-pip install 'ophelian[all]'           # every extra above
-```
-
-Python **3.11+**.
-
-## Architecture
-
-Ophelian draws a hard line between *what* a pipeline does and *where*
-it runs. Nodes are declarative. Envs pick a provider. Providers pick a
-driver. Drivers persist artifacts to a store. The cost router is the
-only component that crosses providers.
-
-```
-                 +--------------------------------------------+
-                 |              Pipeline (DAG)                |
-                 |  Data → Train → Tune → Eval → Deploy       |
-                 +--------------------------------------------+
-                                     |
-                                     v
-                 +--------------------------------------------+
-                 |  Env  (Standalone | AWS | GCP | Azure |    |
-                 |        Auto)                               |
-                 +--------------------------------------------+
-                                     |
-                  +------------------+--------------------+
-                  |                  |                    |
-                  v                  v                    v
-          +---------------+  +---------------+   +-----------------+
-          |  Provider     |  |  Provider     |   |  Provider       |
-          |  (AWS, GCP,   |  |  (Standalone) |   |  (chosen by     |
-          |   Azure)      |  |               |   |   Auto router)  |
-          +---------------+  +---------------+   +-----------------+
-                  |
-       +----------+----------+
-       |                     |
-       v                     v
-  +---------+         +-------------+         +-------------------+
-  | Driver  |  ...    |   Driver    |  <----  |   Cost router     |
-  | (EC2,   |         |  (LocalEC2, |         |  (live spot +     |
-  |  EKS,   |         |   FakeGCE…) |         |   retail prices,  |
-  |  GCE,   |         |             |         |   24h disk cache) |
-  |  AzureVM|         +-------------+         +-------------------+
-  +---------+
-       |
-       v
-  +-----------------------------------------------------+
-  |  ArtifactStore  (Local | S3 | GCS | Azure Blob)     |
-  |   put/get/exists/delete/list  — same Protocol       |
-  +-----------------------------------------------------+
-```
-
-Every cloud code path has a `Local*Driver` mirror, so the test suite
-(and any contributor without cloud creds) exercises the full
-framework offline.
-
-## Envs at a glance
+## Envs
 
 ```python
 from ophelian import Standalone, AWS, GCP, Azure, Auto
 
 Standalone(local=True)                                     # local Docker / in-process
 AWS(region="us-east-1", instance="g5.xlarge", spot=True)   # EC2 / S3
-GCP(project="my-proj", region="us-central1",
+GCP(project="p", region="us-central1",
     machine_type="n1-standard-4", gpu_type="nvidia-tesla-t4",
     preemptible=True)                                      # GCE / GCS
 Azure(subscription_id=..., resource_group="ml",
@@ -173,300 +77,57 @@ Auto(cheapest_gpu="A100",
      regions=["us-east-1", "us-central1", "eastus"])       # cost router
 ```
 
-The same `Pipeline(...)` runs on every one of them.
+The same `Pipeline(...)` runs on every one of them. Each cloud env has
+a `Local*Driver` mirror so the test suite (and any contributor without
+cloud creds) exercises the full framework offline.
 
-## Three demos in three minutes
+## Why Ophelian
 
-All three live under [`examples/`](https://github.com/ophelianio/ophelian/tree/v1.0.1/examples) and default to
-`Auto(cheapest_gpu=...)`. Each demo script reads `OPHELIAN_DRY_RUN`
-and `OPHELIAN_PROVIDERS` from the environment and passes them through
-to `Auto(...)`, so you can preview the routing decision without
-spinning up infra:
-
-```bash
-OPHELIAN_DRY_RUN=1 python examples/llama_finetune.py    # Llama-3 fine-tune on the cheapest A100
-OPHELIAN_DRY_RUN=1 python examples/resnet_train.py      # ResNet-50 on a parquet image dataset, spot-friendly
-OPHELIAN_DRY_RUN=1 python examples/xgboost_tabular.py   # XGBoost tabular, CPU only
-```
-
-In your own code the equivalent is `Auto(..., dry_run=True)` and
-`Auto(..., providers=["aws", "gcp"])` — these env vars are a
-convenience the demo scripts implement on top of the public API,
-not a framework-wide convention.
-
-## Use cases
-
-| Scenario | Why Ophelian fits | Snippet |
-|---|---|---|
-| **Cost-driven LLM fine-tuning** — you want an A100 right now and don't care which cloud sells it cheapest | `Auto(cheapest_gpu=...)` queries live AWS spot, Azure retail, and GCP billing prices, picks the winner, and resumes from checkpoint if the spot is reclaimed | `pipe.run(env=Auto(cheapest_gpu="A100"))` |
-| **Local → cloud without rewrites** — prototype on your laptop, ship the same `pipe` to production | Every cloud code path mirrors a `Local*Driver`, so the same `Pipeline` object runs in-process, in Docker, on EC2, on GCE, or on an Azure VM | `pipe.run(env=Standalone(local=True))` then `pipe.run(env=AWS(...))` |
-| **Multi-cloud failover for batch inference** — your primary region runs out of GPU capacity at 3am | List acceptable regions in `Auto(...)`; the router falls through to the next cheapest provider with capacity, transparently | `Auto(cheapest_gpu="L4", regions=["us-east-1","us-central1","eastus"])` |
-| **Reproducible academic benchmarks** — you need to publish numbers another lab can re-run | `run_id`-tagged structured logs, deterministic artifact layout, pinned price table, Apache-2.0 license, [citable](#citation) | `configure_logging(json=True)` + cite the version you used |
-
-## Observability
-
-```python
-from ophelian.observability import configure_logging
-configure_logging(json=True)
-```
-
-Every step emits structured JSON with `run_id`, `step`, `env`,
-`instance`, `duration_seconds`, `cost_estimate_usd`. At the end you
-get a rich table summary you can paste into a Slack thread.
-
-## Compatibility
-
-Combined matrix (Python × OS × provider). Cell values:
-**`full`** — gated by CI on every push ·
-**`community`** — works, exercised by contributors but not gated by CI ·
-**`planned`** — on the roadmap, not shipped yet ·
-**`n/a`** — does not apply.
-
-| Runtime               | Standalone | AWS (EC2 / EKS) | GCP (GCE) | Azure (VM) | Auto router |
+| | Ophelian | SageMaker | Vertex AI | Azure ML | Bare cloud SDKs |
 |---|:---:|:---:|:---:|:---:|:---:|
-| **Linux (Ubuntu) · Python 3.11** | full | full | full | full | full |
-| **Linux (Ubuntu) · Python 3.12** | full | full | full | full | full |
-| **Linux (Ubuntu) · Python 3.13** | full | full | full | full | full |
-| **macOS · Python 3.12**          | full | full | full | full | full |
-| **macOS · Python 3.11 / 3.13**   | community | community | community | community | community |
-| **Windows · any Python 3.11+**   | community | community | community | community | community |
-
-GKE (`gcp_backend='gke'`) and AKS (`azure_backend='aks'`) are
-**planned** for the post-1.0 roadmap and currently raise a clear
-`NotImplementedError`.
-
-Third-party clouds plug in through the `ophelian.envs` entry-point
-group — see [`CONTRIBUTING.md`](https://github.com/ophelianio/ophelian/blob/v1.0.1/CONTRIBUTING.md).
+| Single API across AWS + GCP + Azure | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Write pipeline once, run anywhere | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Auto-router that picks the cheapest GPU | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Spot / preemptible resume | ✅ | partial | partial | partial | DIY |
+| Local-first dev (no cloud auth) | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Apache-2.0, no vendor lock-in | ✅ | ❌ | ❌ | ❌ | mixed |
 
 ## Documentation
 
-Full docs at **<https://ophelianio.github.io/ophelian/>**:
+Full docs live at **<https://ophelianio.github.io/ophelian/>**:
+[Quickstart](https://ophelianio.github.io/ophelian/quickstart/) ·
+[Concepts](https://ophelianio.github.io/ophelian/concepts/) ·
+[Envs](https://ophelianio.github.io/ophelian/envs/auto/) ·
+[Cookbook](https://ophelianio.github.io/ophelian/cookbook/) ·
+[Troubleshooting](https://ophelianio.github.io/ophelian/troubleshooting/).
 
-- [Quickstart](https://ophelianio.github.io/ophelian/quickstart/)
-- [Concepts](https://ophelianio.github.io/ophelian/concepts/)
-- Envs:
-  [AWS](https://ophelianio.github.io/ophelian/envs/aws/) ·
-  [GCP](https://ophelianio.github.io/ophelian/envs/gcp/) ·
-  [Azure](https://ophelianio.github.io/ophelian/envs/azure/) ·
-  [Standalone](https://ophelianio.github.io/ophelian/envs/standalone/) ·
-  [Auto](https://ophelianio.github.io/ophelian/envs/auto/)
-- [Cookbook](https://ophelianio.github.io/ophelian/cookbook/) ·
-  [Troubleshooting](https://ophelianio.github.io/ophelian/troubleshooting/)
+Runnable examples in [`examples/`](https://github.com/ophelianio/ophelian/tree/v1.0.1/examples).
+Roadmap and release history in [`CHANGELOG.md`](https://github.com/ophelianio/ophelian/blob/v1.0.1/CHANGELOG.md).
 
-## Roadmap
+## Community
 
-Tracked in [`CHANGELOG.md`](https://github.com/ophelianio/ophelian/blob/v1.0.1/CHANGELOG.md) under `## [Unreleased]`
-and in the [GitHub project board](https://github.com/ophelianio/ophelian/issues).
-Headline items currently on deck:
-
-- **GKE driver** — production-grade Kubernetes backend for GCP
-  (`gcp_backend='gke'` is reserved and raises a clear
-  `NotImplementedError` today).
-- **AKS driver** — same, for Azure (`azure_backend='aks'`).
-- **Real-AWS smoke run in nightly CI** — opt-in integration tests
-  promoted from local-only to a scheduled workflow.
-- **Pre-launch cost preview** — print estimated $/run before any
-  AWS pipeline actually provisions infrastructure.
-- **Live pricing for more GPU classes** — extend the router beyond
-  the current T4 / L4 / V100 / A10G / A100 / H100 set.
-
-Anything that breaks the public API requires a major version bump and
-a migration note — see [Status & versioning](#status--versioning).
-
-## Status & versioning
-
-`v1.0.0` — public API is stable. Ophelian follows
-[Semantic Versioning 2.0](https://semver.org/spec/v2.0.0.html):
-
-- **MAJOR** — breaking changes to the public surface re-exported
-  from `ophelian.__init__` or to documented env / provider kwargs.
-- **MINOR** — backwards-compatible additions (new envs, new node
-  fields with safe defaults, new optional extras).
-- **PATCH** — bug fixes, documentation, dependency bumps, perf.
-
-Every breaking change gets a migration note in
-[`CHANGELOG.md`](https://github.com/ophelianio/ophelian/blob/v1.0.1/CHANGELOG.md). Deprecated symbols stay importable
-with a `DeprecationWarning` for at least one minor release before
-removal.
-
-## Community & support
-
-Pick the right channel:
-
-| You want to... | Go to |
-|---|---|
-| Ask a usage question | [GitHub Discussions](https://github.com/ophelianio/ophelian/discussions) |
-| Report a reproducible bug | [Issues → Bug report](https://github.com/ophelianio/ophelian/issues/new?template=bug_report.yml) |
-| Request a feature | [Issues → Feature request](https://github.com/ophelianio/ophelian/issues/new?template=feature_request.yml) |
-| Report a security vulnerability | See [`SECURITY.md`](https://github.com/ophelianio/ophelian/blob/v1.0.1/SECURITY.md) — please **do not** file a public issue |
-| Show what you built with it | [Discussions → Show and tell](https://github.com/ophelianio/ophelian/discussions/categories/show-and-tell) |
-
-We follow the
-[Contributor Covenant 2.1](https://github.com/ophelianio/ophelian/blob/v1.0.1/CODE_OF_CONDUCT.md) in every space we
-maintain.
-
-## Governance & maintainers
-
-Ophelian is currently maintained by [@LuisFalva](https://github.com/LuisFalva)
-under a lightweight BDFL model: the maintainer has final say on
-architecture and API decisions, contributors propose changes via PRs,
-and every public-API change goes through a CHANGELOG-gated review.
-
-A formal `GOVERNANCE.md` and `MAINTAINERS.md` are planned for the
-1.x series as the contributor base grows. The intended trajectory is
-the standard meritocratic open-source model: contributors who make
-sustained, high-quality contributions are invited to become committers,
-and committers vote on new committers. PRs that move the project in
-that direction are welcome.
-
-## Security
-
-Please **do not** report security vulnerabilities via public GitHub
-issues. We take security seriously and want a chance to ship a fix
-before the bug is public.
-
-The full disclosure policy — supported versions, in-scope components,
-response timeline, safe-harbour, and credit process — lives in
-[`SECURITY.md`](https://github.com/ophelianio/ophelian/blob/v1.0.1/SECURITY.md). GitHub auto-detects that file and
-surfaces a **"Report a vulnerability"** button on the repo's
-[Security tab](https://github.com/ophelianio/ophelian/security).
-
-**How to report (in order of preference):**
-
-1. **GitHub Private Vulnerability Reporting** — open
-   <https://github.com/ophelianio/ophelian/security/advisories/new>
-   ("Report a vulnerability" button on the repo's Security tab).
-   This is the recommended channel: end-to-end private, no email
-   round-trip, and triaged automatically into a GitHub Security
-   Advisory if accepted.
-2. **Direct contact with the maintainer** — only if you do not have
-   a GitHub account. Reach the maintainer
-   [@LuisFalva](https://github.com/LuisFalva) privately via the
-   email on their public GitHub profile, with `[ophelian-security]`
-   in the subject line. PVR is preferred for everyone else.
-
-You can expect an acknowledgement within **5 business days** and an
-initial triage within **10 business days** — see
-[`SECURITY.md`](https://github.com/ophelianio/ophelian/blob/v1.0.1/SECURITY.md) for the full timeline. Patched
-releases ship with a GitHub Security Advisory.
-
-**CI guardrails** (defense in depth, not a substitute for reports):
-
-- **CodeQL** — deep static analysis on every push to `main` and on
-  every PR. Manual re-runs available via *Run workflow* in the
-  Actions tab.
-- **pip-audit** + **bandit** + **gitleaks** — run on every push to
-  any branch and on every PR. Manual re-runs available via *Run
-  workflow* in the Actions tab to surface newly-disclosed CVEs on a
-  quiet branch.
-- **GitHub Actions pinned to commit SHAs** with Dependabot watching
-  for supply-chain regressions, and an `action-pin-check` CI job that
-  fails the build if any workflow re-introduces a mutable `@v4`-style
-  reference.
-
-## Contributing
-
-PRs welcome. See [`CONTRIBUTING.md`](https://github.com/ophelianio/ophelian/blob/v1.0.1/CONTRIBUTING.md) for dev setup
-(uv-based), the test slicing strategy, the third-party env plug-in
-contract, and the pricing-table refresh process. The bar for new
-public API is *"this makes pipelines more portable, more honest, or
-more pleasant to use across every supported env."*
-
-Found a security issue? Please follow the disclosure policy in
-[`SECURITY.md`](https://github.com/ophelianio/ophelian/blob/v1.0.1/SECURITY.md) instead of opening a public issue.
-
-By participating you agree to abide by the
-[Code of Conduct](https://github.com/ophelianio/ophelian/blob/v1.0.1/CODE_OF_CONDUCT.md).
+- **Questions** → [GitHub Discussions](https://github.com/ophelianio/ophelian/discussions)
+- **Bugs / features** → [Issues](https://github.com/ophelianio/ophelian/issues)
+- **Security** → see [`SECURITY.md`](https://github.com/ophelianio/ophelian/blob/v1.0.1/SECURITY.md) — please **do not** file a public issue
+- **Contributing** → [`CONTRIBUTING.md`](https://github.com/ophelianio/ophelian/blob/v1.0.1/CONTRIBUTING.md) (we follow the [Contributor Covenant 2.1](https://github.com/ophelianio/ophelian/blob/v1.0.1/CODE_OF_CONDUCT.md))
 
 ## Citation
-
-If Ophelian shows up in research output (papers, theses, technical
-reports), please cite the specific version you used:
 
 ```bibtex
 @software{ophelian_2026,
   author    = {Falva, Luis and the Ophelian contributors},
   title     = {{Ophelian: a declarative, multi-cloud ML pipeline framework}},
   year      = {2026},
-  version   = {1.0.0},
+  version   = {1.0.1},
   license   = {Apache-2.0},
   url       = {https://github.com/ophelianio/ophelian},
-  howpublished = {PyPI: \url{https://pypi.org/project/ophelian/}},
-  publisher = {GitHub},
 }
 ```
-
-Both URLs matter: the GitHub repo is the canonical source and issue
-tracker, and the PyPI page is the immutable artifact archive that
-reproducibility tooling resolves against. For other versions, swap
-`version` and check the matching tag at
-<https://github.com/ophelianio/ophelian/releases> (and the matching
-release on <https://pypi.org/project/ophelian/#history>).
-
-## Acknowledgments
-
-Ophelian stands on a lot of upstream work and would not exist without
-the ecosystems behind:
-
-- **HuggingFace Transformers** and **PyTorch** — model adapters and
-  the training stack that the framework wraps.
-- **scikit-learn** and **XGBoost** — the tabular adapters that keep
-  the framework honest for non-LLM workloads.
-- **boto3 / google-cloud-* / azure-sdk-for-python** — the cloud
-  SDKs that make the multi-cloud surface possible.
-- **pydantic v2**, **typer**, **rich**, **FastAPI**, **uv**,
-  **hatchling**, **mypy**, **ruff** — the small Python-tooling
-  stack that the codebase is built on.
-
-And to every contributor who has filed an issue, opened a PR,
-refreshed the price table, or kicked the tyres on a real cloud:
-**thank you.** Run `git shortlog -sn --no-merges` for the full list.
-
-Changes under `.github/` (CI workflows, `dependabot.yml`, `CODEOWNERS`)
-are owned by the release maintainers — see
-[`.github/CODEOWNERS`](https://github.com/ophelianio/ophelian/blob/v1.0.1/.github/CODEOWNERS). Those PRs auto-request a
-maintainer review and should not be self-merged. See
-[CONTRIBUTING → Changes to `.github/`](https://github.com/ophelianio/ophelian/blob/v1.0.1/CONTRIBUTING.md#changes-to-github-workflows-dependabot-codeowners)
-for what to call out in the PR description.
-
-### Maintainer setup: branch protection on `main` (one-time, manual)
-
-CODEOWNERS only *requests* reviews by default. To make them
-*required* — i.e. to actually block merges of workflow / Dependabot
-changes that haven't been approved by a maintainer — a repo admin
-needs to enable it in GitHub's UI; this can't be expressed in-repo.
-
-In **Settings → Branches → Branch protection rules** for `main`:
-
-1. **Require a pull request before merging** — on
-2. **Require approvals** — at least 1
-3. **Require review from Code Owners** — on (this is the key toggle;
-   without it, the `.github/CODEOWNERS` entries are advisory only)
-4. **Dismiss stale pull request approvals when new commits are pushed**
-   — on (so a force-push to a workflow PR re-triggers maintainer review)
-5. **Do not allow bypassing the above settings** — on, including for
-   admins, so the policy can't be silently sidestepped
-
-Once that's set, any PR touching `.github/workflows/`,
-`.github/dependabot.yml`, or `.github/CODEOWNERS` will be blocked from
-merging until a code owner approves it.
 
 ## License
 
 Copyright © 2024–2026 Luis Falva and the Ophelian contributors.
-
 Licensed under the **Apache License, Version 2.0** — see
-[`LICENSE`](https://github.com/ophelianio/ophelian/blob/v1.0.1/LICENSE) for the full text. Attributions for the
-third-party components Ophelian declares as runtime / optional
-dependencies (PyTorch, HuggingFace Transformers, scikit-learn,
-XGBoost, boto3 / botocore, the google-cloud-* SDKs, the azure-* SDKs,
-pydantic, FastAPI, OpenTelemetry, etc.) are enumerated in
-[`NOTICE`](https://github.com/ophelianio/ophelian/blob/v1.0.1/NOTICE), which ships in both the sdist and the wheel
-on PyPI.
-
-You may not use this project except in compliance with the License.
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an **"AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND**, either express or
-implied. See the License for the specific language governing
-permissions and limitations under the License.
+[`LICENSE`](https://github.com/ophelianio/ophelian/blob/v1.0.1/LICENSE)
+and [`NOTICE`](https://github.com/ophelianio/ophelian/blob/v1.0.1/NOTICE)
+for third-party attributions.

@@ -58,6 +58,18 @@ new version).
   describes what the `Auto()` router actually does (routes to the
   cheapest available SKU/region) instead of making an absolute
   market-price claim we cannot prove.
+- **README simplified**: 472 → ~135 lines. Removed sections that
+  duplicated content already living in dedicated files: ASCII
+  architecture diagram (lives in `docs/concepts.md`), use-cases
+  table (`docs/cookbook.md`), full compatibility matrix
+  (`docs/quickstart.md`), roadmap details (`CHANGELOG.md`), SemVer
+  policy (`CONTRIBUTING.md`), security CI guardrail details
+  (`SECURITY.md`), governance prose, full acknowledgments list, and
+  the maintainer branch-protection runbook (which was
+  internal-ops content that did not belong in a user-facing README).
+  The README now has a single purpose: get a new user from
+  `pip install` to a working `Pipeline` in under a minute, then
+  hand off to the docs site for everything else.
 
 ## [1.0.0] - 2026-05-01
 

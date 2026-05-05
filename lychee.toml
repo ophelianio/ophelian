@@ -28,8 +28,33 @@ max_cache_age = "1d"
 # link is intentionally unreachable from CI (e.g. private
 # dashboards, auth-walled URLs, time-windowed redirects).
 exclude = [
-  # Example:
-  # "^https://internal\\.example\\.com",
+  # ---------------------------------------------------------------
+  # TEMPORARY pre-publish excludes (REMOVE after v1.0.0 is live)
+  # ---------------------------------------------------------------
+  # All entries below 404 today because the project hasn't been
+  # published yet (chicken-and-egg). They will all resolve on their
+  # own once the publish flow completes:
+  #
+  #   * `compare/...` and `releases/tag/...` — resolve when v1.0.0
+  #     (and any prior version tags referenced from CHANGELOG) exist
+  #     on the remote.
+  #   * `blob/main/...` — resolve when the `main` branch is updated
+  #     to the v1.0.0 source tree (currently still legacy).
+  #   * `actions/workflows/<name>.yml/badge.svg` — GitHub renders the
+  #     badge SVG only after the workflow has run on `main` at least
+  #     once.
+  #   * `ophelianio.github.io/ophelian/...` — the docs site is
+  #     published by the `docs.yml` workflow on push to `main`; it
+  #     does not exist yet.
+  #
+  # Action: delete this entire block as part of the v1.0.0 release
+  # checklist, then re-run the link-check workflow to confirm every
+  # URL resolves naturally.
+  "^https://github\\.com/ophelianio/ophelian/compare/",
+  "^https://github\\.com/ophelianio/ophelian/releases/tag/",
+  "^https://github\\.com/ophelianio/ophelian/blob/main/",
+  "^https://github\\.com/ophelianio/ophelian/actions/workflows/.*\\.svg$",
+  "^https://ophelianio\\.github\\.io/ophelian/",
 ]
 
 # --- Misc ----------------------------------------------------------

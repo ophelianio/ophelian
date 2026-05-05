@@ -99,8 +99,9 @@ def _build_provider_for_quote(
 
         if not project:
             raise AutoRouterError(
-                "GCP routing needs a project — pass `Auto(..., project='my-project')`"
-                " or export `GOOGLE_CLOUD_PROJECT`."
+                "Auto router picked 'gcp' but no GCP project was configured —"
+                " pass `Auto(..., project='my-project')`, export `GOOGLE_CLOUD_PROJECT`,"
+                " or restrict Auto with providers=[...] to clouds you have access to."
             )
         machine_type, gpu_type = _gcp_instance_for(quote)
         return GCP(
@@ -117,8 +118,10 @@ def _build_provider_for_quote(
 
         if not (subscription_id and resource_group):
             raise AutoRouterError(
-                "Azure routing needs a subscription_id + resource_group — pass them"
-                " explicitly to Auto(...) or export AZURE_SUBSCRIPTION_ID/AZURE_RESOURCE_GROUP."
+                "Auto router picked 'azure' but subscription_id + resource_group are"
+                " missing — pass them explicitly to Auto(...), export"
+                " AZURE_SUBSCRIPTION_ID/AZURE_RESOURCE_GROUP, or restrict Auto with"
+                " providers=[...] to clouds you have access to."
             )
         return Azure(
             subscription_id=subscription_id,

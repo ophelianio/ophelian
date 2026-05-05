@@ -63,6 +63,34 @@ def _metric_points(reader: Any, name: str) -> list[Any]:
     return points
 
 
+def _counter_sum(reader: Any, name: str, **filters: Any) -> float:
+    """Sum counter values across all data points matching ``filters``.
+
+    The OTel meter provider in this suite is session-scoped (see
+    ``conftest._otel_in_memory_providers``) and counters are monotonic,
+    so absolute counter assertions are contaminated by every test in
+    every other module that hits the same endpoint. Always read deltas.
+    """
+    return sum(
+        p.value
+        for p in _metric_points(reader, name)
+        if all(p.attributes.get(k) == v for k, v in filters.items())
+    )
+
+
+def _histogram_sum(reader: Any, name: str, **filters: Any) -> float:
+    """Sum histogram ``.sum`` across all data points matching ``filters``.
+
+    Same rationale as :func:`_counter_sum` — histograms are also
+    cumulative across the session, so tests must read deltas.
+    """
+    return sum(
+        p.sum
+        for p in _metric_points(reader, name)
+        if all(p.attributes.get(k) == v for k, v in filters.items())
+    )
+
+
 # ----------------------------------------------------------------------
 # Synthetic adapters — keep tests independent of sklearn/torch installs
 # ----------------------------------------------------------------------
@@ -181,23 +209,28 @@ def test_inference_duration_recorded_separately_from_http_latency(
     from ophelian.runtime.fastapi_runtime import build_app
 
     app = build_app(framework="_serve_test_slow", model_path=_model_dir(tmp_path))
+    # Snapshot the cumulative histogram sums BEFORE the request — see
+    # _histogram_sum for why we read deltas instead of absolutes.
+    inf_before = _histogram_sum(
+        otel["metrics"], METRIC_SERVE_INFERENCE_DURATION, **{"http.route": "/predict"}
+    )
+    lat_before = _histogram_sum(otel["metrics"], METRIC_SERVE_LATENCY, **{"http.route": "/predict"})
     with TestClient(app) as client:
         response = client.post("/predict", json={"inputs": [[0.0]]})
     assert response.status_code == 200
 
-    inf_points = _metric_points(otel["metrics"], METRIC_SERVE_INFERENCE_DURATION)
-    inf_predict = [p for p in inf_points if p.attributes.get("http.route") == "/predict"]
-    assert inf_predict, [p.attributes for p in inf_points]
+    inf_after = _histogram_sum(
+        otel["metrics"], METRIC_SERVE_INFERENCE_DURATION, **{"http.route": "/predict"}
+    )
+    lat_after = _histogram_sum(otel["metrics"], METRIC_SERVE_LATENCY, **{"http.route": "/predict"})
+    inf_delta = inf_after - inf_before
+    lat_delta = lat_after - lat_before
     # Slow adapter sleeps 50ms; the recorded sample must reflect that.
-    assert inf_predict[0].sum >= 0.04, inf_predict[0].sum
-
-    lat_points = _metric_points(otel["metrics"], METRIC_SERVE_LATENCY)
-    lat_predict = [p for p in lat_points if p.attributes.get("http.route") == "/predict"]
-    assert lat_predict
+    assert inf_delta >= 0.04, inf_delta
     # Total HTTP latency must be >= inference duration (it includes
     # serialization + framework overhead). This is the contract the
     # whole "two histograms" feature exists to expose.
-    assert lat_predict[0].sum >= inf_predict[0].sum
+    assert lat_delta >= inf_delta, (lat_delta, inf_delta)
 
 
 def test_health_endpoint_records_no_inference_duration(
@@ -246,23 +279,20 @@ def test_status_class_5xx_for_raising_predict(otel: dict[str, Any], tmp_path: Pa
     from ophelian.runtime.fastapi_runtime import build_app
 
     app = build_app(framework="_serve_test_raising", model_path=_model_dir(tmp_path))
+    # Snapshot the 5xx counter for /predict BEFORE the request. Other
+    # test modules (e.g. test_lifecycle_events) also produce 500s on
+    # /predict and the session-scoped meter accumulates them; the only
+    # safe assertion is the delta this test contributed.
+    filters = {"http.route": "/predict", ATTR_HTTP_STATUS_CLASS: "5xx"}
+    before = _counter_sum(otel["metrics"], METRIC_SERVE_REQUESTS, **filters)
     # raise_server_exceptions=False so the test client returns the 500
     # response object instead of re-raising the adapter exception.
     with TestClient(app, raise_server_exceptions=False) as client:
         response = client.post("/predict", json={"inputs": [[0.0]]})
     assert response.status_code == 500
 
-    counts = _metric_points(otel["metrics"], METRIC_SERVE_REQUESTS)
-    five_xx = [
-        p
-        for p in counts
-        if p.attributes.get("http.route") == "/predict"
-        and p.attributes.get(ATTR_HTTP_STATUS_CLASS) == "5xx"
-    ]
-    assert sum(p.value for p in five_xx) == 1, [
-        (p.attributes.get("http.route"), p.attributes.get(ATTR_HTTP_STATUS_CLASS), p.value)
-        for p in counts
-    ]
+    after = _counter_sum(otel["metrics"], METRIC_SERVE_REQUESTS, **filters)
+    assert after - before == 1, (before, after)
 
 
 def test_status_class_2xx_for_healthy_request(otel: dict[str, Any], tmp_path: Path) -> None:

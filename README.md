@@ -5,7 +5,7 @@
 <h1 align="center">Ophelian</h1>
 
 <p align="center">
-  <strong>Write your ML pipeline once. Run it anywhere. Pay the lowest GPU price on the market.</strong>
+  <strong>Write your ML pipeline once. Run it anywhere. Pay the lowest GPU price across AWS, GCP, and Azure.</strong>
 </p>
 
 <p align="center">
@@ -92,11 +92,16 @@ structured logs, and a rich summary at the end.
 ## Install
 
 ```bash
-pip install ophelian            # core, runs locally
-pip install 'ophelian[aws]'     # + EC2 / S3
-pip install 'ophelian[gcp]'     # + GCE / GCS
-pip install 'ophelian[azure]'   # + Azure VM / Blob
-pip install 'ophelian[all]'     # every extra
+pip install ophelian                  # core, runs locally
+pip install 'ophelian[aws]'           # + EC2 / S3
+pip install 'ophelian[gcp]'           # + GCE / GCS
+pip install 'ophelian[azure]'         # + Azure VM / Blob
+pip install 'ophelian[pytorch]'       # + PyTorch model adapter
+pip install 'ophelian[huggingface]'   # + Transformers + PyTorch
+pip install 'ophelian[sklearn]'       # + scikit-learn adapter
+pip install 'ophelian[xgboost]'       # + XGBoost adapter
+pip install 'ophelian[otel]'          # + OpenTelemetry exporters
+pip install 'ophelian[all]'           # every extra above
 ```
 
 Python **3.11+**.
@@ -173,14 +178,21 @@ The same `Pipeline(...)` runs on every one of them.
 ## Three demos in three minutes
 
 All three live under [`examples/`](https://github.com/ophelianio/ophelian/tree/v1.0.0/examples) and default to
-`Auto(cheapest_gpu=...)`. Set `OPHELIAN_DRY_RUN=1` to print the
-chosen provider/region/price without spinning anything up.
+`Auto(cheapest_gpu=...)`. Each demo script reads `OPHELIAN_DRY_RUN`
+and `OPHELIAN_PROVIDERS` from the environment and passes them through
+to `Auto(...)`, so you can preview the routing decision without
+spinning up infra:
 
 ```bash
-python examples/llama_finetune.py    # Llama-3 fine-tune on the cheapest A100
-python examples/resnet_train.py      # ResNet-50 on ImageNet, preemptible-friendly
-python examples/xgboost_tabular.py   # XGBoost tabular, CPU only, sub-$0.05/run
+OPHELIAN_DRY_RUN=1 python examples/llama_finetune.py    # Llama-3 fine-tune on the cheapest A100
+OPHELIAN_DRY_RUN=1 python examples/resnet_train.py      # ResNet-50 on a parquet image dataset, spot-friendly
+OPHELIAN_DRY_RUN=1 python examples/xgboost_tabular.py   # XGBoost tabular, CPU only
 ```
+
+In your own code the equivalent is `Auto(..., dry_run=True)` and
+`Auto(..., providers=["aws", "gcp"])` — these env vars are a
+convenience the demo scripts implement on top of the public API,
+not a framework-wide convention.
 
 ## Use cases
 
@@ -199,8 +211,8 @@ configure_logging(json=True)
 ```
 
 Every step emits structured JSON with `run_id`, `step`, `env`,
-`instance`, `duration_s`, `cost_estimate_usd`. At the end you get a
-rich table summary you can paste into a Slack thread.
+`instance`, `duration_seconds`, `cost_estimate_usd`. At the end you
+get a rich table summary you can paste into a Slack thread.
 
 ## Compatibility
 

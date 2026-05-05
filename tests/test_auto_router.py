@@ -269,3 +269,122 @@ def test_dry_run_provider_skips_every_step() -> None:
     assert all(s.status == "skipped" for s in result.steps)
     for step in result.steps:
         assert "would_run_on" in step.info
+
+
+# --- T004: data_quality wiring + require_live strict mode ------------------
+
+
+def test_router_decision_includes_data_quality(monkeypatch: pytest.MonkeyPatch) -> None:
+    """``Auto()`` must populate ``RouterDecision.data_quality`` from the
+    meta returned by ``fetch_live_with_meta``. Pin the contract so a
+    future refactor cannot silently drop the provenance map."""
+    import ophelian.pricing.lookup as lookup_mod
+
+    def fake_fetch(*_a: Any, **_kw: Any) -> tuple[list[PriceQuote], dict[str, str]]:
+        return ([], {"aws": "live", "gcp": "unavailable", "azure": "cached@2h"})
+
+    monkeypatch.setattr(lookup_mod, "fetch_live_with_meta", fake_fetch)
+    provider = Auto(
+        cheapest_gpu="A100",
+        regions=["us-east-1", "us-central1", "eastus"],
+        dry_run=True,
+        require_credentials=False,
+        allow_live=True,
+    )
+    assert isinstance(provider, _DryRunProvider)
+    dq = provider.decision.data_quality
+    assert dq["aws"] == "live"
+    assert dq["gcp"] == "unavailable"
+    assert dq["azure"] == "cached@2h"
+
+
+def test_log_line_includes_provenance(
+    caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The Auto() info log must surface per-provider provenance and
+    candidate count so on-call engineers can debug routing decisions
+    from logs alone."""
+    import logging
+
+    monkeypatch.setattr(logging.getLogger("ophelian"), "propagate", True)
+    caplog.set_level(logging.INFO, logger="ophelian.envs.auto")
+    Auto(
+        cheapest_gpu="A100",
+        regions=["us-east-1", "us-central1", "eastus"],
+        dry_run=True,
+        require_credentials=False,
+    )
+    selected = [
+        r.getMessage()
+        for r in caplog.records
+        if r.getMessage().startswith("Auto router selected")
+    ]
+    assert len(selected) == 1, f"expected one log line, got {selected!r}"
+    assert "data: aws=" in selected[0]
+    assert "considered:" in selected[0]
+    assert "quotes" in selected[0]
+
+
+def test_require_live_raises_when_source_is_static(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """``require_live=[provider]`` must raise when that provider's
+    provenance is anything other than ``"live"`` — silent degradation
+    is the bug this kwarg exists to prevent."""
+    import ophelian.pricing.lookup as lookup_mod
+
+    def fake_fetch(*_a: Any, **_kw: Any) -> tuple[list[PriceQuote], dict[str, str]]:
+        return ([], {"aws": "live", "gcp": "live", "azure": "unavailable"})
+
+    monkeypatch.setattr(lookup_mod, "fetch_live_with_meta", fake_fetch)
+    with pytest.raises(AutoRouterError) as exc:
+        Auto(
+            cheapest_gpu="A100",
+            regions=["us-east-1", "us-central1", "eastus"],
+            dry_run=True,
+            require_credentials=False,
+            allow_live=True,
+            require_live=["azure"],
+        )
+    msg = str(exc.value)
+    assert "require_live" in msg
+    assert "azure" in msg
+    assert "unavailable" in msg
+
+
+def test_require_live_passes_when_source_is_live(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Happy-path: when ``require_live=[provider]`` is satisfied the
+    router proceeds normally and the chosen quote is the cheapest
+    among all candidates (live + static)."""
+    import ophelian.pricing.lookup as lookup_mod
+
+    azure_live = PriceQuote(
+        provider="azure",
+        region="eastus",
+        instance="Standard_NC24ads_A100_v4",
+        gpu_family="A100",
+        gpu_count=1,
+        hourly_usd=0.5,
+        spot=True,
+        source="azure-retail-api",
+    )
+
+    def fake_fetch(*_a: Any, **_kw: Any) -> tuple[list[PriceQuote], dict[str, str]]:
+        return (
+            [azure_live],
+            {"aws": "unavailable", "gcp": "unavailable", "azure": "live"},
+        )
+
+    monkeypatch.setattr(lookup_mod, "fetch_live_with_meta", fake_fetch)
+    provider = Auto(
+        cheapest_gpu="A100",
+        regions=["us-east-1", "us-central1", "eastus"],
+        dry_run=True,
+        require_credentials=False,
+        allow_live=True,
+        require_live=["azure"],
+    )
+    assert isinstance(provider, _DryRunProvider)
+    assert provider.decision.data_quality["azure"] == "live"

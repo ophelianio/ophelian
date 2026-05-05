@@ -184,7 +184,7 @@ def test_lookup_cheapest_does_not_raise_when_live_fetch_explodes(
     def boom(*_a: Any, **_kw: Any) -> Any:
         raise RuntimeError("live fetch blew up")
 
-    monkeypatch.setattr(lookup_mod, "fetch_live", boom)
+    monkeypatch.setattr(lookup_mod, "fetch_live_with_meta", boom)
     quote = lookup_mod.lookup_cheapest("A100", allow_live=True)
     assert quote is not None, "static fallback failed when live fetch raised"
     assert quote.hourly_usd > 0

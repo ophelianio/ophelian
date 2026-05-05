@@ -47,10 +47,30 @@ class PriceQuote:
 
 @dataclass
 class RouterDecision:
-    """The chosen :class:`PriceQuote` plus context for ``--explain`` output."""
+    """The chosen :class:`PriceQuote` plus context for ``--explain`` output.
+
+    ``data_quality`` records, per provider known to the router (not
+    only those consulted), where the quotes for that provider came
+    from. Providers excluded by the caller's ``providers=[...]`` filter
+    appear in the map with value ``"disabled"`` so downstream tooling
+    sees a complete picture rather than a missing key. Vocabulary:
+
+    * ``"live"`` — fetched from the cloud's pricing API in this call.
+    * ``"cached@<N>h"`` — served from the on-disk cache, age in hours.
+    * ``"unavailable"`` — the provider was consulted but returned no
+      usable quotes (network/auth/no SKUs for this GPU family/region).
+    * ``"static"`` — the live path was not used (``allow_live=False``);
+      only the static fallback table contributed quotes for this
+      provider.
+    * ``"disabled"`` — the provider was excluded by the caller's
+      ``providers=[...]`` filter and was never consulted.
+
+    Empty by default so historical callers keep working unchanged.
+    """
 
     quote: PriceQuote
     considered: list[PriceQuote] = field(default_factory=list)
+    data_quality: dict[str, str] = field(default_factory=dict)
 
     @property
     def savings_vs_most_expensive(self) -> float:

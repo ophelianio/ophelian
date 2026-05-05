@@ -20,6 +20,14 @@ caches results on disk for ``cache_ttl_seconds`` (default: 24 h). The
 fetcher is opt-in — :func:`lookup_cheapest` only consults it when the
 caller passes ``allow_live=True``.
 
+For callers that need to know **where** each provider's prices came
+from (live API, cache hit, static fallback, ...) use the ``*_with_meta``
+variants — :func:`fetch_live_with_meta` and
+:func:`lookup_cheapest_with_meta` — which return the same data plus a
+provenance map. The legacy :func:`fetch_live` and :func:`lookup_cheapest`
+functions are thin wrappers that drop the provenance, kept for
+backward compatibility.
+
 This module is a re-export shim. The implementation lives in:
 
 * :mod:`ophelian.pricing.quotes` — :class:`PriceQuote`,
@@ -27,15 +35,16 @@ This module is a re-export shim. The implementation lives in:
 * :mod:`ophelian.pricing.static` — :data:`STATIC_PRICES`,
   :data:`STATIC_PRICES_LAST_REVIEW`, :func:`static_quotes`
 * :mod:`ophelian.pricing.cache` — on-disk JSON cache helpers
-* :mod:`ophelian.pricing.live` — :func:`fetch_live` coordinator
-  with one submodule per cloud (``aws``, ``azure``, ``gcp``)
-* :mod:`ophelian.pricing.lookup` — :func:`lookup_cheapest`
+* :mod:`ophelian.pricing.live` — :func:`fetch_live_with_meta`
+  coordinator with one submodule per cloud (``aws``, ``azure``,
+  ``gcp``)
+* :mod:`ophelian.pricing.lookup` — :func:`lookup_cheapest_with_meta`
 """
 
 from __future__ import annotations
 
-from ophelian.pricing.live import fetch_live
-from ophelian.pricing.lookup import lookup_cheapest
+from ophelian.pricing.live import fetch_live, fetch_live_with_meta
+from ophelian.pricing.lookup import lookup_cheapest, lookup_cheapest_with_meta
 from ophelian.pricing.quotes import PriceQuote, RouterDecision, explain
 from ophelian.pricing.static import (
     STATIC_PRICES,
@@ -50,6 +59,8 @@ __all__ = [
     "RouterDecision",
     "explain",
     "fetch_live",
+    "fetch_live_with_meta",
     "lookup_cheapest",
+    "lookup_cheapest_with_meta",
     "static_quotes",
 ]

@@ -7,7 +7,9 @@ Usage::
     env = Auto(cheapest_gpu="A100", regions=["us-east-1", "us-central1"])
     pipeline.run(env=env)
 
-The Auto env consults :func:`ophelian.pricing.lookup_cheapest`, picks
+The Auto env consults :func:`ophelian.pricing.lookup_cheapest_with_meta`
+(legacy :func:`ophelian.pricing.lookup_cheapest` is the back-compat
+wrapper that drops the provenance map), picks
 the winner and constructs the matching :func:`AWS` / :func:`GCP` /
 :func:`Azure` provider with credentials inferred from the local
 environment. ``dry_run=True`` returns a wrapper that prints what would
@@ -34,6 +36,7 @@ from ophelian.pricing import (
     RouterDecision,
     explain,
     lookup_cheapest,
+    lookup_cheapest_with_meta,
     static_quotes,
 )
 from ophelian.providers.base import Provider
@@ -232,6 +235,7 @@ def Auto(
     spot: bool = True,
     dry_run: bool = False,
     allow_live: bool = True,
+    require_live: list[str] | None = None,
     project: str | None = None,
     subscription_id: str | None = None,
     resource_group: str | None = None,
@@ -266,6 +270,15 @@ def Auto(
         24 h on-disk cache) and only falls back to the static table
         when no live quote is available. Set to ``False`` to force
         offline routing.
+    require_live:
+        Strict-mode allow-list. When given, every provider in this
+        list must have provenance ``"live"`` in the resulting
+        :attr:`RouterDecision.data_quality` map — anything else
+        (``"cached@<N>h"``, ``"static"``, ``"unavailable"``,
+        ``"disabled"``) raises :class:`AutoRouterError` with the
+        actual provenance map in the message. Use when you would
+        rather fail loudly than route on stale or static prices.
+        Defaults to ``None`` (permissive: any provenance is fine).
     project / subscription_id / resource_group / artifact_account:
         Cloud-specific identifiers needed when the router picks GCP /
         Azure. Falls back to env vars.
@@ -291,7 +304,7 @@ def Auto(
         spot_only = [q for q in candidates if q.spot]
         if spot_only:
             candidates = spot_only
-    quote = lookup_cheapest(
+    quote, data_quality = lookup_cheapest_with_meta(
         cheapest_gpu,
         providers=providers,
         regions=regions,
@@ -304,15 +317,39 @@ def Auto(
             f", regions={regions!r}. Pricing table last reviewed:"
             f" {os.environ.get('OPHELIAN_PRICING_REVIEW', 'see ophelian.pricing.STATIC_PRICES_LAST_REVIEW')}."
         )
-    decision = RouterDecision(quote=quote, considered=candidates)
+    decision = RouterDecision(
+        quote=quote, considered=candidates, data_quality=data_quality
+    )
 
+    if require_live:
+        not_live = {
+            p: data_quality.get(p, "disabled")
+            for p in require_live
+            if data_quality.get(p) != "live"
+        }
+        if not_live:
+            details = ", ".join(f"{p}={v!r}" for p, v in sorted(not_live.items()))
+            raise AutoRouterError(
+                f"require_live={require_live!r} but provenance was {details}."
+                f" Full data_quality map: {data_quality!r}."
+                " Either widen require_live, set allow_live=True, or accept"
+                " the static fallback by removing this kwarg."
+            )
+
+    # Provenance suffix renders providers in stable alphabetical order
+    # so log scrapers and dashboards parse a deterministic format.
+    data_suffix = " ".join(
+        f"{p}={data_quality[p]}" for p in sorted(data_quality)
+    )
     logger.info(
-        "Auto router selected %s/%s %s @ %.3f USD/h (%s)",
+        "Auto router selected %s/%s %s @ %.3f USD/h (%s) | data: %s | considered: %d quotes",
         quote.provider,
         quote.region,
         quote.instance,
         quote.hourly_usd,
         "spot" if quote.spot else "on-demand",
+        data_suffix,
+        len(candidates),
     )
 
     if dry_run:

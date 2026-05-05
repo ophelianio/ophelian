@@ -15,6 +15,7 @@ from ophelian.pricing import (
     explain,
     fetch_live,
     lookup_cheapest,
+    lookup_cheapest_with_meta,
     static_quotes,
 )
 
@@ -422,3 +423,36 @@ def test_lookup_cheapest_prefers_live_over_static_when_cheaper(
     assert chosen is not None
     assert chosen.source == "aws-spot-history"
     assert chosen.hourly_usd == pytest.approx(0.50)
+
+
+def test_lookup_cheapest_with_meta_matches_lookup_cheapest_quote() -> None:
+    """T002 acceptance: the new function must return the *same* quote
+    as the legacy one for identical inputs. Backward-compat invariant —
+    if these ever diverge it means the wrapper has drifted."""
+    cases: list[dict[str, object]] = [
+        {"gpu_family": "A100", "allow_live": False},
+        {"gpu_family": "A100", "allow_live": False, "spot": True},
+        {"gpu_family": "A100", "allow_live": False, "spot": False},
+        {"gpu_family": "A100", "allow_live": False, "providers": ["azure"]},
+        {"gpu_family": "H100", "allow_live": False, "regions": ["us-east-1"]},
+        {"gpu_family": "BANANA-GPU", "allow_live": False},  # both must return None
+    ]
+    for kwargs in cases:
+        legacy = lookup_cheapest(**kwargs)  # type: ignore[arg-type]
+        new, meta = lookup_cheapest_with_meta(**kwargs)  # type: ignore[arg-type]
+        assert new == legacy, f"divergence for {kwargs}: {legacy!r} vs {new!r}"
+        assert isinstance(meta, dict), f"meta must be dict for {kwargs}, got {type(meta)}"
+        # All consulted providers should be marked "static" since allow_live=False.
+        consulted = (
+            set(kwargs["providers"])  # type: ignore[arg-type]
+            if kwargs.get("providers") is not None
+            else {"aws", "gcp", "azure"}
+        )
+        for p in consulted:
+            assert meta[p] == "static", (
+                f"meta[{p!r}] must be 'static' for {kwargs}, got {meta[p]!r}"
+            )
+        for p in {"aws", "gcp", "azure"} - consulted:
+            assert meta[p] == "disabled", (
+                f"meta[{p!r}] must be 'disabled' for {kwargs}, got {meta[p]!r}"
+            )

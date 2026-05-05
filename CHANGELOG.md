@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Data-source provenance in router decisions** (Track C #16) —
+  `RouterDecision` now exposes a `data_quality: dict[str, str]` map
+  recording where each consulted provider's quotes came from
+  (`live` / `cached@<N>h` / `static` / `unavailable` / `disabled`).
+  The `Auto()` selection log line gains `| data: ... | considered: N
+  quotes` suffixes for at-a-glance provenance. New strict-mode kwarg
+  `Auto(..., require_live=["azure"])` raises `AutoRouterError`
+  instead of silently degrading when the named providers' prices
+  did not come from a live API. New public helpers
+  `pricing.fetch_live_with_meta` and `pricing.lookup_cheapest_with_meta`
+  expose the provenance map directly. Backward-compatible: existing
+  `fetch_live` / `lookup_cheapest` / `RouterDecision()` callers keep
+  working unchanged.
+
 ## [1.0.1] - 2026-05-05
 
 No code changes. Patch release whose only purpose is to ship the README

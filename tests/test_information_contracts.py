@@ -87,10 +87,6 @@ def test_pricequote_field_set_is_stable() -> None:
     )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="implemented in v1.1.0 Track C #16 T001 — RouterDecision.data_quality",
-)
 def test_routerdecision_field_set_is_stable() -> None:
     actual = {f.name for f in dataclasses.fields(RouterDecision)}
     missing = EXPECTED_ROUTERDECISION_FIELDS - actual
@@ -121,10 +117,6 @@ def test_pricequote_source_label_vocabulary() -> None:
     )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="implemented in v1.1.0 Track C #16 T001 — data_quality field",
-)
 def test_data_quality_value_vocabulary() -> None:
     """Every value in RouterDecision.data_quality must match the
     published vocabulary regex. Prevents silent introduction of new
@@ -140,15 +132,17 @@ def test_data_quality_value_vocabulary() -> None:
 # --- Log-contract tests -----------------------------------------------------
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="implemented in v1.1.0 Track C #16 T003 — log line includes "
-    "`| data: ...` and `| considered: N quotes` suffixes",
-)
-def test_auto_router_log_format_is_stable(caplog: pytest.LogCaptureFixture) -> None:
+def test_auto_router_log_format_is_stable(
+    caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """The Auto router log line is part of the public contract — on-call
     runbooks quote it and CI dashboards parse it. Any change must be
     explicit (update AUTO_LOG_FORMAT regex in the same commit)."""
+    # The "ophelian" parent logger has propagate=False (configured by
+    # ``ophelian.observability.configure_logging``), so caplog (attached
+    # to root) never sees its records. Re-enable propagation just for
+    # this test; monkeypatch undoes it on teardown.
+    monkeypatch.setattr(logging.getLogger("ophelian"), "propagate", True)
     caplog.set_level(logging.INFO, logger="ophelian.envs.auto")
     Auto(
         cheapest_gpu="A100",
@@ -205,10 +199,6 @@ def test_autorouter_no_credentials_error_names_picked_provider() -> None:
     assert "providers=[...]" in msg, "missing actionable hint about providers="
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="implemented in v1.1.0 Track C #16 T004 — require_live kwarg",
-)
 def test_autorouter_require_live_error_names_provider_and_actual_source() -> None:
     """The 'require_live failed' branch must name the provider that
     failed the live requirement and the actual provenance value
@@ -219,7 +209,7 @@ def test_autorouter_require_live_error_names_provider_and_actual_source() -> Non
             regions=["us-east-1", "us-central1", "eastus"],
             dry_run=True,
             require_credentials=False,
-            require_live=["azure"],  # type: ignore[call-arg]  # not yet on signature
+            require_live=["azure"],
             allow_live=False,  # force azure to be 'static', not 'live'
         )
     msg = str(exc.value)
@@ -270,10 +260,6 @@ def test_explain_output_format() -> None:
 # --- fetch_live_with_meta contract (xfail until T001) -----------------------
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="implemented in v1.1.0 Track C #16 T001 — fetch_live_with_meta",
-)
 def test_fetch_live_with_meta_keys_match_providers_consulted() -> None:
     """The meta dict keys must exactly equal the set of providers
     consulted, no more and no less. Prevents silent gaps where a

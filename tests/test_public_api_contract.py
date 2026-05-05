@@ -43,7 +43,9 @@ EXPECTED_PRICING_ALL = {
     "RouterDecision",
     "explain",
     "fetch_live",
+    "fetch_live_with_meta",
     "lookup_cheapest",
+    "lookup_cheapest_with_meta",
     "static_quotes",
 }
 

@@ -358,9 +358,7 @@ class ScipyDetector:
     test: TestName = "ks"
     threshold: float = 0.05
 
-    def detect(
-        self, *, reference: FeatureBaseline, current: Sequence[Any]
-    ) -> DriftResult:
+    def detect(self, *, reference: FeatureBaseline, current: Sequence[Any]) -> DriftResult:
         if reference.kind == "categorical":
             return self._chi2(reference, current)
         if self.test == "psi":
@@ -454,10 +452,10 @@ class EvidentlyDetector:
         # across major Evidently releases) downgrades cleanly to
         # the SciPy backend instead of crashing at first call.
         try:
-            from evidently.metrics import (  # type: ignore[import-untyped]
+            from evidently.metrics import (
                 ColumnDriftMetric,  # noqa: F401
             )
-            from evidently.report import Report  # type: ignore[import-untyped]  # noqa: F401
+            from evidently.report import Report  # noqa: F401
         except ImportError:
             return False
         return True
@@ -484,7 +482,9 @@ class EvidentlyDetector:
 
         cur_df = pd.DataFrame({"x": [v for v in current if v is not None]})
         report = Report(
-            metrics=[ColumnDriftMetric(column_name="x", stattest=stat_test, threshold=self.threshold)]
+            metrics=[
+                ColumnDriftMetric(column_name="x", stattest=stat_test, threshold=self.threshold)
+            ]
         )
         report.run(reference_data=ref_df, current_data=cur_df)
         result = report.as_dict()["metrics"][0]["result"]
@@ -509,9 +509,7 @@ class EvidentlyDetector:
         )
 
 
-def default_detector(
-    *, test: TestName = "ks", threshold: float = 0.05
-) -> DriftDetector:
+def default_detector(*, test: TestName = "ks", threshold: float = 0.05) -> DriftDetector:
     """Return the preferred backend with the requested test/threshold.
 
     Picks :class:`EvidentlyDetector` when Evidently is installed;

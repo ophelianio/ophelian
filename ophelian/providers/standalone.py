@@ -302,12 +302,8 @@ class StandaloneProvider(Provider):
                     # the span before it closes so downstream traces
                     # reflect handler-converted failures, not just
                     # exception-escape semantics.
-                    if _otel_step_span is not None and hasattr(
-                        _otel_step_span, "set_attribute"
-                    ):
-                        _otel_step_span.set_attribute(
-                            ATTR_STATUS, step_result.status
-                        )
+                    if _otel_step_span is not None and hasattr(_otel_step_span, "set_attribute"):
+                        _otel_step_span.set_attribute(ATTR_STATUS, step_result.status)
                     if step_result.duration_seconds is None:
                         step_result = step_result.model_copy(
                             update={"duration_seconds": time.monotonic() - _step_t0}

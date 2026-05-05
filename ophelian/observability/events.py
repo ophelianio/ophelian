@@ -214,11 +214,11 @@ def emit(event: LifecycleEvent) -> None:
 
 def _mirror_to_otel_span(event: LifecycleEvent) -> None:
     try:
-        from opentelemetry import trace
+        from opentelemetry.trace import get_current_span
     except ImportError:
         return
     try:
-        span = trace.get_current_span()
+        span = get_current_span()
         if span is None:
             return
         if hasattr(span, "is_recording") and not span.is_recording():

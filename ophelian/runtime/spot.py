@@ -165,9 +165,7 @@ class SpotInterruptionMonitor:
                         emit as emit_lifecycle,
                     )
 
-                    emit_lifecycle(
-                        SpotInterruptionReceived(source="spot.monitor")
-                    )
+                    emit_lifecycle(SpotInterruptionReceived(source="spot.monitor"))
                 except Exception:  # pragma: no cover - defensive
                     pass
                 return True

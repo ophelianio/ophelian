@@ -283,9 +283,7 @@ def test_cli_filter_since(ledger_file: Path) -> None:
 def test_cli_filter_until(ledger_file: Path) -> None:
     _seed(ledger_file)
     # epoch-seconds form is also accepted
-    result = runner.invoke(
-        app, ["costs", "--until", str(1700000000.0 + 1), "--format", "json"]
-    )
+    result = runner.invoke(app, ["costs", "--until", str(1700000000.0 + 1), "--format", "json"])
     assert result.exit_code == 0, result.stdout
     payload = json.loads(result.stdout)
     assert {r["pipeline"] for r in payload} == {"alpha"}

@@ -148,6 +148,21 @@ dev = [
     # runtime extras the test suite exercises directly
     "scikit-learn>=1.4",
     "joblib>=1.4",
+    # observability stack — the conftest installs in-memory OTel
+    # providers used by every test module that asserts on spans /
+    # metrics, and the FastAPI runtime tests scrape ``/metrics``
+    # via prometheus_client. Mirrors the ``[otel]`` extra.
+    "opentelemetry-api>=1.25",
+    "opentelemetry-sdk>=1.25",
+    "opentelemetry-exporter-otlp-proto-http>=1.25",
+    "opentelemetry-exporter-prometheus>=0.46b0",
+    "prometheus_client>=0.20",
+    # drift backend — Task #30 tests exercise both the SciPy
+    # default detector and the Evidently fallback. Mirrors the
+    # ``[drift]`` extra.
+    "scipy>=1.11",
+    "numpy>=1.26",
+    "evidently>=0.4",
     # mocked AWS SDK + helpers used in unit tests
     "boto3>=1.34",
     "botocore>=1.34",
@@ -251,8 +266,19 @@ module = [
     "azure.mgmt.network",
     "azure.storage.blob",
     "google.cloud",
+    "opentelemetry",
+    "opentelemetry.metrics",
+    "opentelemetry.sdk.resources",
+    "opentelemetry.sdk.trace",
+    "opentelemetry.sdk.trace.export",
+    "opentelemetry.sdk.metrics",
+    "opentelemetry.sdk.metrics.export",
+    "opentelemetry.exporter.prometheus",
     "opentelemetry.exporter.otlp.proto.http.trace_exporter",
     "opentelemetry.exporter.otlp.proto.http.metric_exporter",
+    "prometheus_client",
+    "evidently.metrics",
+    "evidently.report",
 ]
 ignore_missing_imports = true
 

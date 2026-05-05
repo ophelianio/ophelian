@@ -213,10 +213,7 @@ _BUILTIN_GROUP_KEYS = {
 def _group_rows(rows: list[dict[str, Any]], by: str) -> dict[str, dict[str, Any]]:
     groups: dict[str, dict[str, Any]] = {}
     for row in rows:
-        if by in _BUILTIN_GROUP_KEYS:
-            key = row.get(by)
-        else:
-            key = (row.get("context") or {}).get(by)
+        key = row.get(by) if by in _BUILTIN_GROUP_KEYS else (row.get("context") or {}).get(by)
         key_str = str(key) if key is not None else "(unset)"
         bucket = groups.setdefault(
             key_str,
@@ -269,7 +266,10 @@ def _emit_rows(rows: list[dict[str, Any]], *, output_format: str) -> None:
         return
     if output_format == "markdown":
         headers = ["timestamp", "pipeline", "provider", "region", "status", "hours", "actual_usd"]
-        lines = ["| " + " | ".join(headers) + " |", "| " + " | ".join("---" for _ in headers) + " |"]
+        lines = [
+            "| " + " | ".join(headers) + " |",
+            "| " + " | ".join("---" for _ in headers) + " |",
+        ]
         for row in rows:
             lines.append(
                 "| "
@@ -346,7 +346,10 @@ def _emit_groups(
         return
     if output_format == "markdown":
         headers = [by, "runs", "hours", "actual_usd"]
-        lines = ["| " + " | ".join(headers) + " |", "| " + " | ".join("---" for _ in headers) + " |"]
+        lines = [
+            "| " + " | ".join(headers) + " |",
+            "| " + " | ".join("---" for _ in headers) + " |",
+        ]
         for row in flat:
             lines.append(
                 f"| {row[by]} | {row['runs']} | {row['hours']:.4f} | {_format_usd(row['actual_usd'])} |"

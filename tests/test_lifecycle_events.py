@@ -149,9 +149,7 @@ def test_handler_exception_does_not_propagate(captured: list[LifecycleEvent]) ->
     assert any("Lifecycle handler" in r.getMessage() for r in records)
 
 
-def test_otel_span_event_mirroring(
-    otel: dict[str, Any], captured: list[LifecycleEvent]
-) -> None:
+def test_otel_span_event_mirroring(otel: dict[str, Any], captured: list[LifecycleEvent]) -> None:
     from ophelian.observability.otel import pipeline_span
 
     with pipeline_span(pipeline_name="lc-mirror", run_id="r1"):
@@ -167,9 +165,7 @@ def test_otel_span_event_mirroring(
     pipeline = [s for s in spans if "pipeline" in s.name]
     assert pipeline, [s.name for s in spans]
     events = pipeline[-1].events
-    assert any(e.name == "ophelian.model.loaded" for e in events), [
-        e.name for e in events
-    ]
+    assert any(e.name == "ophelian.model.loaded" for e in events), [e.name for e in events]
 
 
 # ----------------------------------------------------------------------
@@ -210,9 +206,7 @@ _EVENT_FACTORIES: list[tuple[str, Any]] = [
     ),
     (
         "step_started",
-        lambda: StepStarted(
-            source="s", step_name="s", step_kind="data", provider="standalone"
-        ),
+        lambda: StepStarted(source="s", step_name="s", step_kind="data", provider="standalone"),
     ),
     (
         "step_completed",
@@ -240,9 +234,7 @@ _EVENT_FACTORIES: list[tuple[str, Any]] = [
 ]
 
 
-@pytest.mark.parametrize(
-    "name,factory", _EVENT_FACTORIES, ids=[n for n, _ in _EVENT_FACTORIES]
-)
+@pytest.mark.parametrize("name,factory", _EVENT_FACTORIES, ids=[n for n, _ in _EVENT_FACTORIES])
 def test_event_class_constructible_and_dispatched(
     captured: list[LifecycleEvent], name: str, factory: Any
 ) -> None:
@@ -327,9 +319,7 @@ def test_context_propagated_from_pipeline_to_every_event(
     propagating = [
         e
         for e in captured
-        if isinstance(
-            e, (PipelineStarted, PipelineCompleted, StepStarted, StepCompleted)
-        )
+        if isinstance(e, (PipelineStarted, PipelineCompleted, StepStarted, StepCompleted))
     ]
     assert propagating, [type(e).__name__ for e in captured]
     for e in propagating:
@@ -388,9 +378,7 @@ def _model_dir(tmp_path: Path) -> Path:
     return p
 
 
-def test_model_loaded_fires_on_build_app(
-    tmp_path: Path, captured: list[LifecycleEvent]
-) -> None:
+def test_model_loaded_fires_on_build_app(tmp_path: Path, captured: list[LifecycleEvent]) -> None:
     from ophelian.runtime.fastapi_runtime import build_app
 
     build_app(framework="_lifecycle_test", model_path=_model_dir(tmp_path))
@@ -550,11 +538,7 @@ def test_step_runner_emits_events_with_context(
     spec_path.write_text(_json.dumps(spec))
     rc = step_runner.run(spec_path)
     assert rc == 0
-    step_events = [
-        e
-        for e in captured
-        if isinstance(e, (StepStarted, StepCompleted, StepFailed))
-    ]
+    step_events = [e for e in captured if isinstance(e, (StepStarted, StepCompleted, StepFailed))]
     assert step_events, [type(e).__name__ for e in captured]
     for e in step_events:
         assert e.context == ctx, type(e).__name__

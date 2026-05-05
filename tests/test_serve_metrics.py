@@ -221,9 +221,7 @@ def test_health_endpoint_records_no_inference_duration(
 # ----------------------------------------------------------------------
 
 
-def test_inflight_gauge_returns_to_zero_after_request(
-    otel: dict[str, Any], tmp_path: Path
-) -> None:
+def test_inflight_gauge_returns_to_zero_after_request(otel: dict[str, Any], tmp_path: Path) -> None:
     from ophelian.runtime.fastapi_runtime import build_app
 
     app = build_app(framework="_serve_test_slow", model_path=_model_dir(tmp_path))
@@ -232,9 +230,7 @@ def test_inflight_gauge_returns_to_zero_after_request(
             assert client.post("/predict", json={"inputs": [[0.0]]}).status_code == 200
 
     inflight = _metric_points(otel["metrics"], METRIC_SERVE_INFLIGHT)
-    predict_inflight = [
-        p for p in inflight if p.attributes.get("http.route") == "/predict"
-    ]
+    predict_inflight = [p for p in inflight if p.attributes.get("http.route") == "/predict"]
     assert predict_inflight, [p.attributes for p in inflight]
     # Sum across all data points for /predict must be 0 — every inc
     # has been matched by a dec.
@@ -246,9 +242,7 @@ def test_inflight_gauge_returns_to_zero_after_request(
 # ----------------------------------------------------------------------
 
 
-def test_status_class_5xx_for_raising_predict(
-    otel: dict[str, Any], tmp_path: Path
-) -> None:
+def test_status_class_5xx_for_raising_predict(otel: dict[str, Any], tmp_path: Path) -> None:
     from ophelian.runtime.fastapi_runtime import build_app
 
     app = build_app(framework="_serve_test_raising", model_path=_model_dir(tmp_path))
@@ -271,9 +265,7 @@ def test_status_class_5xx_for_raising_predict(
     ]
 
 
-def test_status_class_2xx_for_healthy_request(
-    otel: dict[str, Any], tmp_path: Path
-) -> None:
+def test_status_class_2xx_for_healthy_request(otel: dict[str, Any], tmp_path: Path) -> None:
     from ophelian.runtime.fastapi_runtime import build_app
 
     app = build_app(framework="_serve_test_slow", model_path=_model_dir(tmp_path))
@@ -295,9 +287,7 @@ def test_status_class_2xx_for_healthy_request(
 # ----------------------------------------------------------------------
 
 
-def test_tokens_counters_fire_for_openai_shape(
-    otel: dict[str, Any], tmp_path: Path
-) -> None:
+def test_tokens_counters_fire_for_openai_shape(otel: dict[str, Any], tmp_path: Path) -> None:
     from ophelian.runtime.fastapi_runtime import build_app
 
     app = build_app(framework="_serve_test_openai", model_path=_model_dir(tmp_path))
@@ -312,14 +302,10 @@ def test_tokens_counters_fire_for_openai_shape(
     assert sum(p.value for p in in_predict) == 13
     assert sum(p.value for p in out_predict) == 7
     # Framework must propagate so consumers can fan out by adapter.
-    assert any(
-        p.attributes.get(ATTR_FRAMEWORK) == "_serve_test_openai" for p in in_predict
-    )
+    assert any(p.attributes.get(ATTR_FRAMEWORK) == "_serve_test_openai" for p in in_predict)
 
 
-def test_tokens_counters_silent_for_plain_predict(
-    otel: dict[str, Any], tmp_path: Path
-) -> None:
+def test_tokens_counters_silent_for_plain_predict(otel: dict[str, Any], tmp_path: Path) -> None:
     """Adapters that return a plain prediction (no usage shape) must
     NOT contribute to the token counters — guessing would be worse
     than having no signal."""
@@ -406,9 +392,7 @@ def test_metrics_endpoint_serves_prometheus_text_when_enabled(
     # ``ophelian_serve_requests`` for Prometheus; counters get a
     # ``_total`` suffix per Prometheus conventions. We accept either
     # to stay resilient to upstream naming policy tweaks.
-    assert (
-        "ophelian_serve_requests" in body or "ophelian_serve_latency" in body
-    ), body[:2000]
+    assert "ophelian_serve_requests" in body or "ophelian_serve_latency" in body, body[:2000]
 
 
 def test_queue_depth_observer_reports_registered_value(

@@ -89,9 +89,7 @@ def _install_otel_middleware(app: FastAPI, *, framework: str) -> None:
         with state["lock"]:
             was_idle = state["inflight"] == 0
             state["inflight"] += 1
-            idle_delta = (
-                time.monotonic() - state["last_finished_at"] if was_idle else 0.0
-            )
+            idle_delta = time.monotonic() - state["last_finished_at"] if was_idle else 0.0
         if idle_delta > 0.0:
             record_serve_idle(route=route, idle_seconds=idle_delta)
         serve_inflight_inc(method=method, route=route)
@@ -114,9 +112,7 @@ def _install_otel_middleware(app: FastAPI, *, framework: str) -> None:
                     status_code=500,
                     duration_seconds=self_duration,
                     span=span,
-                    inference_duration_seconds=getattr(
-                        request.state, "inference_duration_s", None
-                    ),
+                    inference_duration_seconds=getattr(request.state, "inference_duration_s", None),
                 )
                 # Lifecycle: inference_failed — emitted INSIDE the
                 # serve span so OTel mirroring lands on the same

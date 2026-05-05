@@ -130,11 +130,10 @@ def append_row(row: LedgerRow, *, path: Path | None = None) -> Path:
     """Append *row* to the ledger atomically. Returns the file path written."""
     target = path or ledger_path()
     payload = json.dumps(row.to_dict(), default=str, sort_keys=True)
-    with _file_lock(target):
-        with open(target, "a", encoding="utf-8") as fh:
-            fh.write(payload + "\n")
-            fh.flush()
-            os.fsync(fh.fileno())
+    with _file_lock(target), open(target, "a", encoding="utf-8") as fh:
+        fh.write(payload + "\n")
+        fh.flush()
+        os.fsync(fh.fileno())
     return target
 
 
@@ -214,8 +213,8 @@ def emit_run_row(
 __all__ = [
     "ENV_VAR_DISABLED",
     "ENV_VAR_PATH",
-    "LedgerRow",
     "SCHEMA_VERSION",
+    "LedgerRow",
     "append_row",
     "emit_run_row",
     "ledger_path",

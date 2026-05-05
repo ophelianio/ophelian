@@ -347,15 +347,14 @@ class Pipeline(BaseModel):
                 from ophelian.observability.ledger import emit_run_row
 
                 if result_for_ledger is not None:
-                    hours = sum(
-                        (s.duration_seconds or 0.0) for s in result_for_ledger.steps
-                    ) / 3600.0
+                    hours = (
+                        sum((s.duration_seconds or 0.0) for s in result_for_ledger.steps) / 3600.0
+                    )
                 else:
                     hours = 0.0
                 emit_run_row(
                     pipeline_name=self.name,
-                    run_id=getattr(env, "_run_id", None)
-                    or getattr(env, "_last_run_id", None),
+                    run_id=getattr(env, "_run_id", None) or getattr(env, "_last_run_id", None),
                     env_class=env_class,
                     provider=provider_name,
                     region=str(region) if region is not None else None,

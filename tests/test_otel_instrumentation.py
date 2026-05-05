@@ -174,13 +174,10 @@ def test_pipeline_metrics_recorded(otel_capture: dict[str, Any], tmp_path: Path)
     # so we only assert presence + status here. The "exactly one"
     # contract is enforced by the pipeline.runs assertion above and
     # by the explicit failure regression test below.
-    ingest_points = [
-        p for p in step_durations if p.attributes.get(ATTR_STEP_NAME) == "ingest"
-    ]
+    ingest_points = [p for p in step_durations if p.attributes.get(ATTR_STEP_NAME) == "ingest"]
     assert ingest_points
     assert any(
-        p.attributes.get(ATTR_STATUS) == "success"
-        and p.attributes.get(ATTR_STEP_KIND) == "data"
+        p.attributes.get(ATTR_STATUS) == "success" and p.attributes.get(ATTR_STEP_KIND) == "data"
         for p in ingest_points
     )
 
@@ -215,8 +212,7 @@ def test_step_span_records_failed_duration_when_handler_raises(
         and p.attributes.get(ATTR_STATUS) == "failed"
     ]
     assert matching, [
-        (p.attributes.get(ATTR_STEP_NAME), p.attributes.get(ATTR_STATUS))
-        for p in durations
+        (p.attributes.get(ATTR_STEP_NAME), p.attributes.get(ATTR_STATUS)) for p in durations
     ]
     assert sum(p.count for p in matching) == 1
 
@@ -256,9 +252,7 @@ def test_failed_pipeline_status_is_not_overwritten_to_success(
 # ----------------------------------------------------------------------
 
 
-def test_serve_request_emits_span_and_metrics(
-    otel_capture: dict[str, Any], tmp_path: Path
-) -> None:
+def test_serve_request_emits_span_and_metrics(otel_capture: dict[str, Any], tmp_path: Path) -> None:
     pytest.importorskip("sklearn")
     import joblib
     from sklearn.linear_model import LogisticRegression
@@ -285,9 +279,7 @@ def test_serve_request_emits_span_and_metrics(
     assert s.attributes["http.status_code"] == 200
 
     counter_points = _metric_points(otel_capture["metrics"], METRIC_SERVE_REQUESTS)
-    assert any(
-        p.attributes.get("http.route") == "/health" and p.value >= 1 for p in counter_points
-    )
+    assert any(p.attributes.get("http.route") == "/health" and p.value >= 1 for p in counter_points)
     latency_points = _metric_points(otel_capture["metrics"], METRIC_SERVE_LATENCY)
     # The in-memory metric reader is session-scoped (set_meter_provider
     # is one-shot in OTel), so other tests may have left /predict

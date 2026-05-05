@@ -260,12 +260,8 @@ def test_prediction_drift_monitor_emits_on_shifted_outputs(
     captured: list[LifecycleEvent],
 ) -> None:
     rng = random.Random(5)
-    baseline = Baseline.from_samples(
-        prediction_samples=[rng.random() for _ in range(500)]
-    )
-    monitor = PredictionDriftMonitor(
-        baseline=baseline, model_id="m@v1", window_size=150
-    )
+    baseline = Baseline.from_samples(prediction_samples=[rng.random() for _ in range(500)])
+    monitor = PredictionDriftMonitor(baseline=baseline, model_id="m@v1", window_size=150)
     for _ in range(150):
         # All predictions clamped near 1.0 — a clear distribution shift
         # away from the uniform baseline.
@@ -341,9 +337,7 @@ def test_fastapi_serve_path_feeds_attached_monitors(
     app = build_app(framework="_drift_test", model_path=_model_dir(tmp_path))
     attach_drift_monitors(
         app,
-        data_monitor=DataDriftMonitor(
-            baseline=baseline, model_id="m@v1", window_size=100
-        ),
+        data_monitor=DataDriftMonitor(baseline=baseline, model_id="m@v1", window_size=100),
         prediction_monitor=PredictionDriftMonitor(
             baseline=baseline, model_id="m@v1", window_size=100
         ),
@@ -387,9 +381,7 @@ def test_window_slides_with_stride_and_keeps_recent_samples() -> None:
     so consecutive checks operate on overlapping but advancing
     samples (the standard online-drift-detection pattern)."""
     baseline = Baseline.from_samples(feature_samples={"x": [0.0] * 100})
-    monitor = DataDriftMonitor(
-        baseline=baseline, model_id="m", window_size=10, stride=2
-    )
+    monitor = DataDriftMonitor(baseline=baseline, model_id="m", window_size=10, stride=2)
     # Fill the window: it triggers the first evaluation, then keeps
     # all 10 most-recent samples (does NOT reset to empty).
     for _ in range(10):
@@ -417,9 +409,7 @@ def test_positional_list_batch_maps_columns_to_baseline_names(
             "f1": [rng.gauss(0.0, 1.0) for _ in range(400)],
         }
     )
-    monitor = DataDriftMonitor(
-        baseline=baseline, model_id="m@v1", window_size=80, stride=10
-    )
+    monitor = DataDriftMonitor(baseline=baseline, model_id="m@v1", window_size=80, stride=10)
     # Send 100 positional rows (list[list]) of clearly-shifted
     # values — both columns should populate windows and trigger
     # drift detection.
@@ -435,9 +425,7 @@ def test_positional_list_batch_maps_columns_to_baseline_names(
 def test_single_positional_row_observation() -> None:
     """A single positional row (``list|tuple``) is also a valid shape."""
     baseline = Baseline.from_samples(feature_samples={"f0": [0.0] * 50})
-    monitor = DataDriftMonitor(
-        baseline=baseline, model_id="m", window_size=10, stride=2
-    )
+    monitor = DataDriftMonitor(baseline=baseline, model_id="m", window_size=10, stride=2)
     for _ in range(10):
         monitor.observe([0.5])
     assert len(monitor._windows["f0"].values) == 10  # type: ignore[attr-defined]
@@ -456,9 +444,7 @@ def test_unknown_features_are_ignored() -> None:
 def test_batched_payload_decomposes_into_records() -> None:
     """A batch payload (dict[name -> list]) feeds N points per call."""
     baseline = Baseline.from_samples(feature_samples={"x": [0.0] * 100})
-    monitor = DataDriftMonitor(
-        baseline=baseline, model_id="m", window_size=20, stride=5
-    )
+    monitor = DataDriftMonitor(baseline=baseline, model_id="m", window_size=20, stride=5)
     monitor.observe({"x": [0.0] * 19})  # one short of full
     win = monitor._windows["x"]  # type: ignore[attr-defined]
     assert len(win.values) == 19

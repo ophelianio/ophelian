@@ -468,9 +468,7 @@ def _serve_tokens_out_counter() -> Any:
     return _serve_tokens_out
 
 
-def register_queue_depth_observer(
-    callback: Any, *, route: str | None = None
-) -> None:
+def register_queue_depth_observer(callback: Any, *, route: str | None = None) -> None:
     """Register an observable callback for ``ophelian.serve.queue.depth``.
 
     The callback is invoked by the OTel meter on each collection cycle

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/ophelian.png" alt="Ophelian" width="120" height="120">
+  <img src="https://raw.githubusercontent.com/ophelianio/ophelian/v1.0.0/docs/assets/ophelian.png" alt="Ophelian" width="96" height="96">
 </p>
 
 <h1 align="center">Ophelian</h1>
@@ -8,25 +8,20 @@
   <strong>Write your ML pipeline once. Run it anywhere. Pay the lowest GPU price on the market.</strong>
 </p>
 
-<!-- Status -->
+<p align="center">
+  <a href="https://pypi.org/project/ophelian/"><img src="https://img.shields.io/pypi/v/ophelian.svg" alt="PyPI"></a>
+  <a href="https://pypi.org/project/ophelian/"><img src="https://img.shields.io/pypi/pyversions/ophelian.svg" alt="Python versions"></a>
+  <a href="https://github.com/ophelianio/ophelian/blob/v1.0.0/LICENSE"><img src="https://img.shields.io/pypi/l/ophelian.svg" alt="License"></a>
+  <a href="https://github.com/ophelianio/ophelian/actions/workflows/ci.yml"><img src="https://github.com/ophelianio/ophelian/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://ophelianio.github.io/ophelian/"><img src="https://img.shields.io/badge/docs-online-4baaaa.svg" alt="Docs"></a>
+</p>
 
-[![PyPI](https://img.shields.io/pypi/v/ophelian.svg)](https://pypi.org/project/ophelian/)
-[![Python](https://img.shields.io/pypi/pyversions/ophelian.svg)](https://pypi.org/project/ophelian/)
-[![Downloads](https://static.pepy.tech/badge/ophelian/month)](https://pepy.tech/project/ophelian)
-[![License](https://img.shields.io/pypi/l/ophelian.svg)](LICENSE)
-
-<!-- Quality -->
-
-[![CI](https://github.com/ophelianio/ophelian/actions/workflows/ci.yml/badge.svg)](https://github.com/ophelianio/ophelian/actions/workflows/ci.yml)
-[![CodeQL](https://github.com/ophelianio/ophelian/actions/workflows/codeql.yml/badge.svg)](https://github.com/ophelianio/ophelian/actions/workflows/codeql.yml)
-[![Security](https://github.com/ophelianio/ophelian/actions/workflows/security.yml/badge.svg)](https://github.com/ophelianio/ophelian/actions/workflows/security.yml)
-[![Docs](https://github.com/ophelianio/ophelian/actions/workflows/docs.yml/badge.svg)](https://ophelianio.github.io/ophelian/)
-
-<!-- Community -->
-
-[![Code of Conduct](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
-[![Discussions](https://img.shields.io/github/discussions/ophelianio/ophelian)](https://github.com/ophelianio/ophelian/discussions)
-[![Issues](https://img.shields.io/github/issues/ophelianio/ophelian)](https://github.com/ophelianio/ophelian/issues)
+<p align="center">
+  <a href="https://github.com/ophelianio/ophelian/actions/workflows/codeql.yml"><img src="https://github.com/ophelianio/ophelian/actions/workflows/codeql.yml/badge.svg" alt="CodeQL"></a>
+  <a href="https://github.com/ophelianio/ophelian/actions/workflows/security.yml"><img src="https://github.com/ophelianio/ophelian/actions/workflows/security.yml/badge.svg" alt="Security"></a>
+  <a href="https://github.com/ophelianio/ophelian/blob/v1.0.0/CODE_OF_CONDUCT.md"><img src="https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg" alt="Code of Conduct"></a>
+  <a href="https://github.com/ophelianio/ophelian/discussions"><img src="https://img.shields.io/github/discussions/ophelianio/ophelian" alt="Discussions"></a>
+</p>
 
 ---
 
@@ -177,7 +172,7 @@ The same `Pipeline(...)` runs on every one of them.
 
 ## Three demos in three minutes
 
-All three live under [`examples/`](examples/) and default to
+All three live under [`examples/`](https://github.com/ophelianio/ophelian/tree/v1.0.0/examples) and default to
 `Auto(cheapest_gpu=...)`. Set `OPHELIAN_DRY_RUN=1` to print the
 chosen provider/region/price without spinning anything up.
 
@@ -229,7 +224,7 @@ GKE (`gcp_backend='gke'`) and AKS (`azure_backend='aks'`) are
 `NotImplementedError`.
 
 Third-party clouds plug in through the `ophelian.envs` entry-point
-group — see [`CONTRIBUTING.md`](CONTRIBUTING.md).
+group — see [`CONTRIBUTING.md`](https://github.com/ophelianio/ophelian/blob/v1.0.0/CONTRIBUTING.md).
 
 ## Documentation
 
@@ -248,7 +243,7 @@ Full docs at **<https://ophelianio.github.io/ophelian/>**:
 
 ## Roadmap
 
-Tracked in [`CHANGELOG.md`](CHANGELOG.md) under `## [Unreleased]`
+Tracked in [`CHANGELOG.md`](https://github.com/ophelianio/ophelian/blob/v1.0.0/CHANGELOG.md) under `## [Unreleased]`
 and in the [GitHub project board](https://github.com/ophelianio/ophelian/issues).
 Headline items currently on deck:
 
@@ -278,7 +273,7 @@ a migration note — see [Status & versioning](#status--versioning).
 - **PATCH** — bug fixes, documentation, dependency bumps, perf.
 
 Every breaking change gets a migration note in
-[`CHANGELOG.md`](CHANGELOG.md). Deprecated symbols stay importable
+[`CHANGELOG.md`](https://github.com/ophelianio/ophelian/blob/v1.0.0/CHANGELOG.md). Deprecated symbols stay importable
 with a `DeprecationWarning` for at least one minor release before
 removal.
 
@@ -291,11 +286,11 @@ Pick the right channel:
 | Ask a usage question | [GitHub Discussions](https://github.com/ophelianio/ophelian/discussions) |
 | Report a reproducible bug | [Issues → Bug report](https://github.com/ophelianio/ophelian/issues/new?template=bug_report.yml) |
 | Request a feature | [Issues → Feature request](https://github.com/ophelianio/ophelian/issues/new?template=feature_request.yml) |
-| Report a security vulnerability | See [`SECURITY.md`](SECURITY.md) — please **do not** file a public issue |
+| Report a security vulnerability | See [`SECURITY.md`](https://github.com/ophelianio/ophelian/blob/v1.0.0/SECURITY.md) — please **do not** file a public issue |
 | Show what you built with it | [Discussions → Show and tell](https://github.com/ophelianio/ophelian/discussions/categories/show-and-tell) |
 
 We follow the
-[Contributor Covenant 2.1](CODE_OF_CONDUCT.md) in every space we
+[Contributor Covenant 2.1](https://github.com/ophelianio/ophelian/blob/v1.0.0/CODE_OF_CONDUCT.md) in every space we
 maintain.
 
 ## Governance & maintainers
@@ -320,7 +315,7 @@ before the bug is public.
 
 The full disclosure policy — supported versions, in-scope components,
 response timeline, safe-harbour, and credit process — lives in
-[`SECURITY.md`](SECURITY.md). GitHub auto-detects that file and
+[`SECURITY.md`](https://github.com/ophelianio/ophelian/blob/v1.0.0/SECURITY.md). GitHub auto-detects that file and
 surfaces a **"Report a vulnerability"** button on the repo's
 [Security tab](https://github.com/ophelianio/ophelian/security).
 
@@ -340,7 +335,7 @@ surfaces a **"Report a vulnerability"** button on the repo's
 
 You can expect an acknowledgement within **5 business days** and an
 initial triage within **10 business days** — see
-[`SECURITY.md`](SECURITY.md) for the full timeline. Patched
+[`SECURITY.md`](https://github.com/ophelianio/ophelian/blob/v1.0.0/SECURITY.md) for the full timeline. Patched
 releases ship with a GitHub Security Advisory.
 
 **CI guardrails** (defense in depth, not a substitute for reports):
@@ -359,17 +354,17 @@ releases ship with a GitHub Security Advisory.
 
 ## Contributing
 
-PRs welcome. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for dev setup
+PRs welcome. See [`CONTRIBUTING.md`](https://github.com/ophelianio/ophelian/blob/v1.0.0/CONTRIBUTING.md) for dev setup
 (uv-based), the test slicing strategy, the third-party env plug-in
 contract, and the pricing-table refresh process. The bar for new
 public API is *"this makes pipelines more portable, more honest, or
 more pleasant to use across every supported env."*
 
 Found a security issue? Please follow the disclosure policy in
-[`SECURITY.md`](SECURITY.md) instead of opening a public issue.
+[`SECURITY.md`](https://github.com/ophelianio/ophelian/blob/v1.0.0/SECURITY.md) instead of opening a public issue.
 
 By participating you agree to abide by the
-[Code of Conduct](CODE_OF_CONDUCT.md).
+[Code of Conduct](https://github.com/ophelianio/ophelian/blob/v1.0.0/CODE_OF_CONDUCT.md).
 
 ## Citation
 
@@ -417,9 +412,9 @@ refreshed the price table, or kicked the tyres on a real cloud:
 
 Changes under `.github/` (CI workflows, `dependabot.yml`, `CODEOWNERS`)
 are owned by the release maintainers — see
-[`.github/CODEOWNERS`](.github/CODEOWNERS). Those PRs auto-request a
+[`.github/CODEOWNERS`](https://github.com/ophelianio/ophelian/blob/v1.0.0/.github/CODEOWNERS). Those PRs auto-request a
 maintainer review and should not be self-merged. See
-[CONTRIBUTING → Changes to `.github/`](CONTRIBUTING.md#changes-to-github-workflows-dependabot-codeowners)
+[CONTRIBUTING → Changes to `.github/`](https://github.com/ophelianio/ophelian/blob/v1.0.0/CONTRIBUTING.md#changes-to-github-workflows-dependabot-codeowners)
 for what to call out in the PR description.
 
 ### Maintainer setup: branch protection on `main` (one-time, manual)
@@ -449,12 +444,12 @@ merging until a code owner approves it.
 Copyright © 2024–2026 Luis Falva and the Ophelian contributors.
 
 Licensed under the **Apache License, Version 2.0** — see
-[`LICENSE`](LICENSE) for the full text. Attributions for the
+[`LICENSE`](https://github.com/ophelianio/ophelian/blob/v1.0.0/LICENSE) for the full text. Attributions for the
 third-party components Ophelian declares as runtime / optional
 dependencies (PyTorch, HuggingFace Transformers, scikit-learn,
 XGBoost, boto3 / botocore, the google-cloud-* SDKs, the azure-* SDKs,
 pydantic, FastAPI, OpenTelemetry, etc.) are enumerated in
-[`NOTICE`](NOTICE), which ships in both the sdist and the wheel
+[`NOTICE`](https://github.com/ophelianio/ophelian/blob/v1.0.0/NOTICE), which ships in both the sdist and the wheel
 on PyPI.
 
 You may not use this project except in compliance with the License.

@@ -35,5 +35,5 @@ exclude = [
 # --- Misc ----------------------------------------------------------
 # Don't fail on `mailto:` links or local loopback URLs (these are
 # never useful to check from CI).
-exclude_mail     = true
+include_mail     = false
 exclude_loopback = true

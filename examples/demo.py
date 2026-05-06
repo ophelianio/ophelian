@@ -3,10 +3,19 @@
 Runs as a plain Python script (PyCharm / `python examples/demo.py`) and
 also cell-by-cell from a Jupyter notebook (see ``examples/demo.ipynb``).
 
-Requirements:
-    pip install ophelian scikit-learn
+Requirements
+------------
+The demo needs Ophelian **1.1.0+** for the per-provider provenance
+(``data_quality``) and ``require_live`` strict mode shown in sections
+4 and 5. Until 1.1.0 is on PyPI, install the dev branch directly::
 
-Five sections:
+    pip install "git+https://github.com/ophelianio/ophelian.git@dev" scikit-learn
+
+If you only have 1.0.1 from PyPI the first three sections still work;
+sections 4 and 5 print a "needs 1.1.0+" notice and continue.
+
+Sections
+--------
     1. Define a pipeline with the declarative DSL.
     2. Train locally on the Standalone executor (no Docker, no cloud).
     3. Inspect step results, metrics, and the trained-model artifact.
@@ -19,9 +28,12 @@ Five sections:
 
 from __future__ import annotations
 
-from ophelian import Data, Deploy, Eval, Pipeline, Standalone, Train
+from ophelian import Data, Deploy, Eval, Pipeline, Standalone, Train, __version__
 from ophelian.envs import Auto, AutoRouterError
 from ophelian.pricing import explain
+from ophelian.pricing.quotes import RouterDecision
+
+_HAS_PROVENANCE = "data_quality" in RouterDecision.__dataclass_fields__
 
 
 def banner(title: str) -> None:
@@ -92,6 +104,7 @@ print(f"Health URL  : {serve_info.get('health')}")
 # 4. Cost-route the same pipeline across clouds (dry-run, no creds needed).
 # ---------------------------------------------------------------------------
 banner("4. Auto router — cheapest A100 across AWS / GCP / Azure")
+print(f"(running ophelian {__version__})")
 
 router = Auto(
     cheapest_gpu="A100",
@@ -104,7 +117,10 @@ print(f"Picked     : {decision.quote.provider}/{decision.quote.region}")
 print(f"Instance   : {decision.quote.instance}")
 print(f"Price      : {decision.quote.hourly_usd} USD/h ({'spot' if decision.quote.spot else 'on-demand'})")
 print(f"Considered : {len(decision.considered)} quotes")
-print(f"Provenance : {decision.data_quality}")
+if _HAS_PROVENANCE:
+    print(f"Provenance : {decision.data_quality}")
+else:
+    print("Provenance : <needs ophelian >= 1.1.0 — see install instructions at top>")
 print()
 print(explain(decision))
 
@@ -114,17 +130,21 @@ print(explain(decision))
 # ---------------------------------------------------------------------------
 banner("5. Strict mode: require_live=[...]")
 
-try:
-    Auto(
-        cheapest_gpu="A100",
-        regions=["us-east-1", "us-central1", "eastus"],
-        dry_run=True,
-        require_credentials=False,
-        require_live=["aws", "gcp", "azure"],
-        allow_live=False,  # force everything to 'static' so the check trips
-    )
-except AutoRouterError as exc:
-    print(f"AutoRouterError raised (as expected):\n  {exc}")
+if not _HAS_PROVENANCE:
+    print("Skipped: require_live needs ophelian >= 1.1.0.")
+    print('Install with: pip install "git+https://github.com/ophelianio/ophelian.git@dev"')
+else:
+    try:
+        Auto(
+            cheapest_gpu="A100",
+            regions=["us-east-1", "us-central1", "eastus"],
+            dry_run=True,
+            require_credentials=False,
+            require_live=["aws", "gcp", "azure"],
+            allow_live=False,  # force everything to 'static' so the check trips
+        )
+    except AutoRouterError as exc:
+        print(f"AutoRouterError raised (as expected):\n  {exc}")
 
 
 banner("Done")

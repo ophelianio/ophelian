@@ -16,7 +16,7 @@
   <a href="https://pypi.org/project/ophelian/">
     <img src="https://img.shields.io/pypi/dm/ophelian.svg" alt="PyPI Downloads"/>
   </a>
-  <a href="https://github.com/ophelianio/ophelian/blob/v1.0.1/LICENSE">
+  <a href="https://github.com/ophelianio/ophelian/blob/dev/LICENSE">
     <img src="https://img.shields.io/badge/license-Apache--2.0-blue.svg" alt="License: Apache 2.0"/>
   </a>
   <a href="https://github.com/ophelianio/ophelian/actions/workflows/ci.yml">
@@ -31,18 +31,18 @@
   <b>Documentation</b>:
   <a href="https://ophelianio.github.io/ophelian/">User guide</a>
   ·
-  <a href="https://github.com/ophelianio/ophelian/blob/v1.0.1/docs/quickstart.md">Quickstart</a>
+  <a href="https://github.com/ophelianio/ophelian/blob/dev/docs/quickstart.md">Quickstart</a>
   ·
-  <a href="https://github.com/ophelianio/ophelian/blob/v1.0.1/docs/concepts.md">Concepts</a>
+  <a href="https://github.com/ophelianio/ophelian/blob/dev/docs/concepts.md">Concepts</a>
   ·
-  <a href="https://github.com/ophelianio/ophelian/blob/v1.0.1/docs/cookbook.md">Cookbook</a>
+  <a href="https://github.com/ophelianio/ophelian/blob/dev/docs/cookbook.md">Cookbook</a>
   ·
-  <a href="https://github.com/ophelianio/ophelian/blob/v1.0.1/docs/cli.md">CLI</a>
+  <a href="https://github.com/ophelianio/ophelian/blob/dev/docs/cli.md">CLI</a>
   |
   <b>Project</b>:
-  <a href="https://github.com/ophelianio/ophelian/tree/v1.0.1/examples">Examples</a>
+  <a href="https://github.com/ophelianio/ophelian/tree/dev/examples">Examples</a>
   ·
-  <a href="https://github.com/ophelianio/ophelian/blob/v1.0.1/CHANGELOG.md">Changelog</a>
+  <a href="https://github.com/ophelianio/ophelian/blob/dev/CHANGELOG.md">Changelog</a>
   ·
   <a href="https://github.com/ophelianio/ophelian/discussions">Discussions</a>
 </p>
@@ -95,7 +95,7 @@ The same source runs on your laptop, on EC2 spot, on a GCE preemptible VM, or
 on an Azure Spot VM — Ophelian handles checkpointing, artifact persistence
 (S3 / GCS / Azure Blob), structured logs, and a rich summary at the end. More
 copy-paste recipes (LLM fine-tuning, distributed training, deploy targets,
-custom envs) in the [Cookbook](https://github.com/ophelianio/ophelian/blob/v1.0.1/docs/cookbook.md).
+custom envs) in the [Cookbook](https://github.com/ophelianio/ophelian/blob/dev/docs/cookbook.md).
 
 ## What you get
 
@@ -134,20 +134,24 @@ silently falling back to a stale or static price.
 
 ### Honest, reproducible cost
 
+Every terminal run appends one row to `~/.ophelian/ledger.jsonl`. Query it with:
+
 ```bash
-$ ophelian costs --by team --since 2026-01-01 --format markdown
-| team | runs | hours  | actual_usd |
+ophelian costs --by team --since 2026-01-01 --format markdown
+```
+
+| team | runs | hours   | actual_usd |
+| :--- | ---: | ------: | ---------: |
 | ml   |   42 | 18.7000 |     $12.34 |
 | nlp  |   11 |  3.2000 |      $4.10 |
-```
 
 The ledger schema is versioned and append-only; downstream tools (dashboards,
 invoicing, internal showback) tail the file without us imposing a backend.
 
 ### Why not just use SageMaker / Vertex AI / Azure ML?
 
-| | Ophelian | SageMaker | Vertex AI | Azure ML | Bare cloud SDKs |
-|---|:---:|:---:|:---:|:---:|:---:|
+| Capability                              | Ophelian | SageMaker | Vertex AI | Azure ML | Bare cloud SDKs |
+| :-------------------------------------- | :------: | :-------: | :-------: | :------: | :-------------: |
 | Single API across AWS + GCP + Azure | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Write pipeline once, run anywhere | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Auto-router that picks the cheapest GPU | ✅ | ❌ | ❌ | ❌ | ❌ |
@@ -169,7 +173,7 @@ pip install 'ophelian[all]'           # every adapter and provider
 ```
 
 Python **3.11+**. Full extras list (`pytorch`, `sklearn`, `xgboost`, `otel`, ...)
-in [`pyproject.toml`](https://github.com/ophelianio/ophelian/blob/v1.0.1/pyproject.toml).
+in [`pyproject.toml`](https://github.com/ophelianio/ophelian/blob/dev/pyproject.toml).
 
 To check the installed version and confirm the CLI is on your `$PATH`:
 
@@ -182,31 +186,31 @@ ophelian version
 The hosted user guide lives at **<https://ophelianio.github.io/ophelian/>**.
 Per-topic pages (rendered from the same Markdown sources):
 
-- [Quickstart](https://github.com/ophelianio/ophelian/blob/v1.0.1/docs/quickstart.md) — install and run your first pipeline.
-- [Concepts](https://github.com/ophelianio/ophelian/blob/v1.0.1/docs/concepts.md) — pipelines, nodes, envs, providers, drivers, stores, run_id.
-- [Envs](https://github.com/ophelianio/ophelian/tree/v1.0.1/docs/envs) — per-cloud reference (AWS, GCP, Azure, Standalone, Auto).
-- [Cookbook](https://github.com/ophelianio/ophelian/blob/v1.0.1/docs/cookbook.md) — copy-paste recipes for common patterns.
-- [CLI](https://github.com/ophelianio/ophelian/blob/v1.0.1/docs/cli.md) — `ophelian run`, `dry-run`, `costs`, `version`.
-- [Cost ledger](https://github.com/ophelianio/ophelian/blob/v1.0.1/docs/ledger.md) — schema, showback, integrations.
-- [Observability](https://github.com/ophelianio/ophelian/tree/v1.0.1/docs/observability) — JSON logs, OpenTelemetry, lifecycle events.
-- [Troubleshooting](https://github.com/ophelianio/ophelian/blob/v1.0.1/docs/troubleshooting.md) — when it doesn't work.
+- [Quickstart](https://github.com/ophelianio/ophelian/blob/dev/docs/quickstart.md) — install and run your first pipeline.
+- [Concepts](https://github.com/ophelianio/ophelian/blob/dev/docs/concepts.md) — pipelines, nodes, envs, providers, drivers, stores, run_id.
+- [Envs](https://github.com/ophelianio/ophelian/tree/dev/docs/envs) — per-cloud reference (AWS, GCP, Azure, Standalone, Auto).
+- [Cookbook](https://github.com/ophelianio/ophelian/blob/dev/docs/cookbook.md) — copy-paste recipes for common patterns.
+- [CLI](https://github.com/ophelianio/ophelian/blob/dev/docs/cli.md) — `ophelian run`, `dry-run`, `costs`, `version`.
+- [Cost ledger](https://github.com/ophelianio/ophelian/blob/dev/docs/ledger.md) — schema, showback, integrations.
+- [Observability](https://github.com/ophelianio/ophelian/tree/dev/docs/observability) — JSON logs, OpenTelemetry, lifecycle events.
+- [Troubleshooting](https://github.com/ophelianio/ophelian/blob/dev/docs/troubleshooting.md) — when it doesn't work.
 
-Runnable end-to-end examples in [`examples/`](https://github.com/ophelianio/ophelian/tree/v1.0.1/examples).
-Release history in [`CHANGELOG.md`](https://github.com/ophelianio/ophelian/blob/v1.0.1/CHANGELOG.md).
+Runnable end-to-end examples in [`examples/`](https://github.com/ophelianio/ophelian/tree/dev/examples).
+Release history in [`CHANGELOG.md`](https://github.com/ophelianio/ophelian/blob/dev/CHANGELOG.md).
 
 ## Contributing
 
 We welcome contributions, from bug reports to new envs and adapters. Read the
-[contributing guide](https://github.com/ophelianio/ophelian/blob/v1.0.1/CONTRIBUTING.md)
+[contributing guide](https://github.com/ophelianio/ophelian/blob/dev/CONTRIBUTING.md)
 to get a local development environment running, then take a look at
 [good first issues](https://github.com/ophelianio/ophelian/labels/good%20first%20issue).
-We follow the [Contributor Covenant 2.1](https://github.com/ophelianio/ophelian/blob/v1.0.1/CODE_OF_CONDUCT.md).
+We follow the [Contributor Covenant 2.1](https://github.com/ophelianio/ophelian/blob/dev/CODE_OF_CONDUCT.md).
 
 ## Community
 
 - **Questions** → [GitHub Discussions](https://github.com/ophelianio/ophelian/discussions)
 - **Bugs / features** → [Issues](https://github.com/ophelianio/ophelian/issues)
-- **Security** → see [`SECURITY.md`](https://github.com/ophelianio/ophelian/blob/v1.0.1/SECURITY.md) — please **do not** file a public issue
+- **Security** → see [`SECURITY.md`](https://github.com/ophelianio/ophelian/blob/dev/SECURITY.md) — please **do not** file a public issue
 
 ## Citation
 
@@ -215,7 +219,7 @@ We follow the [Contributor Covenant 2.1](https://github.com/ophelianio/ophelian/
   author    = {Falva, Luis and the Ophelian contributors},
   title     = {{Ophelian: a declarative, multi-cloud ML pipeline framework}},
   year      = {2026},
-  version   = {1.0.1},
+  version   = {1.1.0},
   license   = {Apache-2.0},
   url       = {https://github.com/ophelianio/ophelian},
 }
@@ -225,6 +229,6 @@ We follow the [Contributor Covenant 2.1](https://github.com/ophelianio/ophelian/
 
 Copyright © 2024–2026 Luis Falva and the Ophelian contributors.
 Licensed under the **Apache License, Version 2.0** — see
-[`LICENSE`](https://github.com/ophelianio/ophelian/blob/v1.0.1/LICENSE) and
-[`NOTICE`](https://github.com/ophelianio/ophelian/blob/v1.0.1/NOTICE) for
+[`LICENSE`](https://github.com/ophelianio/ophelian/blob/dev/LICENSE) and
+[`NOTICE`](https://github.com/ophelianio/ophelian/blob/dev/NOTICE) for
 third-party attributions.

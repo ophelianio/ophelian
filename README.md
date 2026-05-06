@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://ophelianio.github.io/ophelian/">
-    <img src="https://raw.githubusercontent.com/ophelianio/ophelian/dev/docs/assets/ophelian.png" alt="Ophelian" width="120" height="120">
+    <img src="https://raw.githubusercontent.com/ophelianio/ophelian/dev/docs/assets/ophelian-face-512.png" alt="Ophelian" width="120" height="120">
   </a>
 </p>
 

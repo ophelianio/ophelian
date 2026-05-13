@@ -54,7 +54,16 @@ jobs:
           inputs: requirements.audit.txt
           # Allow human review of advisories without ignoring them.
           # Add specific advisory IDs here only when accepting risk.
-          ignore-vulns: ""
+          #
+          # CVE-2026-44405 (paramiko 4.0.0): rsakey.py *permits* SHA-1 as
+          # a signature algorithm. No upstream fix available as of this
+          # writing. Risk accepted because (a) Ophelian uses paramiko only
+          # to bootstrap EC2 instances over short-lived SSH sessions, (b)
+          # the vulnerability requires a server actively offering SHA-1,
+          # which AWS-managed sshd does not, and (c) we control both
+          # endpoints. Re-evaluate when paramiko ships a fix.
+          ignore-vulns: |
+            CVE-2026-44405
 
   # ---------------------------------------------------------------
   # bandit — static analysis for common Python security smells

@@ -177,7 +177,7 @@ Contributions are welcome — from bug reports to new envs and adapters. Start w
   author  = {Falva, Luis and the Ophelian contributors},
   title   = {{Ophelian: a declarative, multi-cloud ML pipeline framework}},
   year    = {2026},
-  version = {1.1.0},
+  version = {1.1.1},
   license = {Apache-2.0},
   url     = {https://github.com/ophelianio/ophelian},
 }

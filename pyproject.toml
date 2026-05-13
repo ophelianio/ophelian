@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ophelian"
-version = "1.1.0"
+version = "1.1.1"
 description = "Declarative ML framework: write a Pipeline once, run it anywhere — local Docker, AWS, GCP, Azure, or routed to the cheapest cloud."
 readme = "README.md"
 license = { text = "Apache-2.0" }

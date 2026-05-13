@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-05-13
+
+No code changes. Patch release that fixes packaging and security
+hygiene only:
+
+### Fixed
+
+- **README logo on PyPI** — the project logo was rendered with a
+  relative path (`docs/assets/...`), which GitHub resolves correctly
+  but PyPI's Warehouse does not. Switched the `<img>` tag in the
+  README to the absolute `raw.githubusercontent.com` URL so the logo
+  renders on the PyPI project page.
+- **Logo asset** — replaced `docs/assets/ophelian.png` (which had a
+  dark halo baked into the artwork, visible on GitHub dark mode) with
+  three transparent PNG variants at 512 / 1024 / 2048 resolution
+  (`docs/assets/ophelian-face-{512,1024,2048}.png`). README now points
+  to the 512px asset (renders at 120×120, 4× retina is enough).
+
+### Security
+
+- **urllib3** bumped 2.6.3 → 2.7.0 in `uv.lock`. Fixes
+  CVE-2026-44431 (sensitive headers leaked across cross-origin
+  redirects via the low-level `ProxyManager` API) and CVE-2026-44432
+  (memory amplification in the streaming decompression path).
+- **ujson** bumped 5.12.0 → 5.12.1 in `uv.lock`. Fixes CVE-2026-44660
+  (memory leak when `ujson.dump()` writes to a file-like object that
+  raises during write).
+- **paramiko** CVE-2026-44405 (`rsakey.py` permits SHA-1 as a signature
+  algorithm) is acknowledged and ignored in
+  `.github/workflows/security.yml` with a documented justification:
+  no upstream fix is available, paramiko is only used for short-lived
+  EC2 bootstrap SSH against AWS-managed sshd (which does not offer
+  SHA-1), and both endpoints are under our control. The ignore will
+  be removed once paramiko ships a fix.
+
 ## [1.1.0] - 2026-05-06
 
 ### Added

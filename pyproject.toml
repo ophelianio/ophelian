@@ -33,7 +33,7 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = ">=3.9,<3.12"
-pyspark = "3.2.2"
+pyspark = "3.4.4"
 numpy = "1.26.4"
 pyhocon = "0.3.45"
 pandas = "2.2.2"

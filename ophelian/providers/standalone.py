@@ -857,7 +857,13 @@ class StandaloneProvider(Provider):
             "-m",
             "uvicorn",
             "--factory",
-            "ophelian.runtime.fastapi_runtime:build_app",
+            # Must be app_from_env, NOT build_app: build_app() takes
+            # required keyword-only args (framework, model_path), so
+            # `uvicorn --factory ...:build_app` crashes on boot with
+            # "missing 2 required keyword-only arguments". app_from_env
+            # is the zero-arg factory that reads the OPHELIAN_FRAMEWORK
+            # / OPHELIAN_MODEL_PATH env vars we set below.
+            "ophelian.runtime.fastapi_runtime:app_from_env",
             "--host",
             "0.0.0.0",  # nosec B104  # uvicorn subprocess for local serving
             "--port",

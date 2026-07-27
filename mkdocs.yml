@@ -71,6 +71,7 @@ plugins:
 nav:
   - Home: index.md
   - Quickstart: quickstart.md
+  - "Tutorial: test & serve": tutorial-test-and-serve.md
   - Concepts: concepts.md
   - Envs:
       - Standalone: envs/standalone.md

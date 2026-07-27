@@ -1,27 +1,45 @@
-"""HuggingFace quickstart (advanced — requires network + transformers).
+"""HuggingFace quickstart — fine-tune a tiny GPT-2 on an inline corpus.
 
-Unlike the other examples, this one is **not** runnable on a fresh checkout
-without internet access and the ``transformers`` extra installed::
+This runs locally with the ``huggingface`` extra installed::
 
     pip install -e '.[huggingface]'
+    python examples/huggingface_pipeline.py
 
-It is included as documentation of the intended pipeline shape; CI does not
-exercise it end-to-end.
+The only network access is a one-time download of the ~5 MB
+``sshleifer/tiny-gpt2`` model from the Hub; the training data is inline,
+so no dataset download is needed. To train on a Hub dataset instead, use
+``source="hf://<dataset-id>"`` (needs the ``datasets`` package) in place
+of ``options={"texts": [...]}``.
 """
 
 from __future__ import annotations
 
 from ophelian import Data, Deploy, Pipeline, Standalone, Train
 
+CORPUS = [
+    "Ophelian runs the same pipeline locally and on every cloud.",
+    "Declare a pipeline once, then pick an env to run it anywhere.",
+    "The cost router picks the cheapest GPU across AWS, GCP, and Azure.",
+    "Every deploy step serves /health and /predict over HTTP.",
+    "Checkpointing makes spot and preemptible instances safe to use.",
+    "Adapters cover sklearn, xgboost, pytorch, and huggingface.",
+]
+
 pipe = Pipeline(
     [
-        Data(name="alpaca", source="hf://yahma/alpaca-cleaned", format="huggingface"),
+        Data(
+            name="corpus",
+            source="inline://",
+            format="huggingface",
+            options={"texts": CORPUS},
+        ),
         Train(
             name="ft",
             framework="huggingface",
             model="sshleifer/tiny-gpt2",
-            data="alpaca",
+            data="corpus",
             epochs=1,
+            hyperparameters={"per_device_train_batch_size": 2, "max_length": 32},
         ),
         Deploy(name="serve", model="ft", port=8000),
     ],
@@ -30,4 +48,6 @@ pipe = Pipeline(
 
 
 if __name__ == "__main__":
-    pipe.run(env=Standalone(local=True))
+    result = pipe.run(env=Standalone(local=True))
+    for step in result.steps:
+        print(f"{step.name}: {step.status} {step.error or ''}")

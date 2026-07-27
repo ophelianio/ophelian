@@ -41,7 +41,7 @@ dependencies = [
 
 [project.optional-dependencies]
 pytorch = ["torch>=2.2"]
-huggingface = ["transformers>=4.40", "torch>=2.2"]
+huggingface = ["transformers>=4.40", "torch>=2.2", "accelerate>=1.1"]
 sklearn = ["scikit-learn>=1.4", "joblib>=1.4"]
 xgboost = ["xgboost>=2.0"]
 aws = [
@@ -118,6 +118,7 @@ drift = [
 all = [
     "torch>=2.2",
     "transformers>=4.40",
+    "accelerate>=1.1",
     "scikit-learn>=1.4",
     "joblib>=1.4",
     "xgboost>=2.0",
@@ -251,6 +252,7 @@ exclude = ["build/", "dist/", "examples/"]
 module = [
     "torch",
     "transformers",
+    "datasets",
     "sklearn",
     "sklearn.utils",
     "sklearn.datasets",

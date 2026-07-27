@@ -26,8 +26,13 @@ import os
 
 from ophelian import AWS, Data, Deploy, Eval, Pipeline, Train
 
+# Read config at import time with a placeholder default so the module
+# imports (and `ophelian dry-run` can compile the plan) without any AWS
+# env vars set. `main()` refuses to run for real until a real bucket is
+# provided.
+_PLACEHOLDER_BUCKET = "your-ophelian-bucket"
 REGION = os.environ.get("OPHELIAN_AWS_REGION", "us-east-1")
-BUCKET = os.environ["OPHELIAN_AWS_BUCKET"]
+BUCKET = os.environ.get("OPHELIAN_AWS_BUCKET", _PLACEHOLDER_BUCKET)
 DATA_URI = os.environ.get(
     "OPHELIAN_AWS_DATASET",
     f"s3://{BUCKET}/datasets/tabular/train.jsonl",
@@ -52,6 +57,11 @@ pipe = Pipeline(
 
 
 def main() -> None:
+    if BUCKET == _PLACEHOLDER_BUCKET:
+        raise SystemExit(
+            "Set OPHELIAN_AWS_BUCKET to your S3 artifact bucket before running "
+            "this example against AWS (see the module docstring)."
+        )
     env = AWS(
         region=REGION,
         instance=os.environ.get("OPHELIAN_AWS_INSTANCE", "m5.large"),

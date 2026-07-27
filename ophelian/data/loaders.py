@@ -133,7 +133,11 @@ def _materialize_huggingface(node: Data) -> dict[str, Any]:
         name = source.removeprefix("hf://")
         split = options.get("split", "train")
         text_column = options.get("text_column", "text")
-        dataset = load_dataset(name, split=split)
+        # Revision pinning is the caller's responsibility (same contract as
+        # the model adapters): pass options={'revision': '<sha-or-tag>'} to
+        # fetch a fixed dataset snapshot instead of the mutable branch head.
+        revision = options.get("revision")
+        dataset = load_dataset(name, split=split, revision=revision)
         if text_column not in dataset.column_names:
             raise KeyError(
                 f"Data(format='huggingface') source {source!r} has no column "

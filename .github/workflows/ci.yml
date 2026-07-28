@@ -9,7 +9,7 @@ on:
     branches: ["**"]
     tags-ignore: ["**"]   # the Release workflow handles tags
   pull_request:
-    branches: [main]
+    branches: [main, dev]
   workflow_dispatch:
 
 # Cancel superseded runs on the same ref so a fast follow-up commit

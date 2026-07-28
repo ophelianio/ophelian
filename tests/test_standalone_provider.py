@@ -161,3 +161,89 @@ def test_tune_step_promotes_train_artifact(provider: StandaloneProvider) -> None
     best_dir = Path(result.step("hpo").artifacts["best_model"])
     assert best_dir.is_dir()
     assert (best_dir / "trial.json").exists()
+
+
+def test_serve_deploys_spawns_a_bootable_uvicorn_factory(
+    workspace: Path, engine: FakeDockerEngine, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Regression: ``serve_deploys=True`` must launch uvicorn against a
+    factory that actually boots.
+
+    The bug: ``_spawn_uvicorn`` pointed uvicorn at
+    ``fastapi_runtime:build_app``, whose signature has *required*
+    keyword-only args (``framework``, ``model_path``). ``uvicorn
+    --factory`` calls the factory with zero arguments, so the server
+    crashed on boot with "missing 2 required keyword-only arguments".
+    The correct target is ``app_from_env``, which reads the
+    ``OPHELIAN_FRAMEWORK`` / ``OPHELIAN_MODEL_PATH`` env vars the spawn
+    sets. This test captures the spawned command without starting a real
+    server and asserts both facts.
+    """
+    import importlib
+
+    from ophelian.providers import standalone as standalone_mod
+
+    captured: dict[str, object] = {}
+
+    class _FakePopen:
+        def __init__(self, cmd: list[str], env: dict[str, str], **_: object) -> None:
+            captured["cmd"] = cmd
+            captured["env"] = env
+
+        def terminate(self) -> None:  # pragma: no cover - not exercised here
+            pass
+
+    monkeypatch.setattr(standalone_mod.subprocess, "Popen", _FakePopen)
+
+    provider = StandaloneProvider(
+        local=True,
+        workspace=workspace,
+        docker_engine=engine,
+        container=False,
+        serve_deploys=True,
+    )
+    pipeline = Pipeline(
+        [
+            _data_node(),
+            Train(
+                name="trainer",
+                framework="sklearn",
+                model="sklearn.linear_model.LogisticRegression",
+                data="ds",
+            ),
+            Deploy(name="serve", model="trainer", port=9100),
+        ],
+        name="serve-regression",
+    )
+
+    result = pipeline.run(env=provider)
+    assert result.succeeded
+    assert result.step("serve").info.get("served") is True
+
+    cmd = captured["cmd"]
+    assert isinstance(cmd, list)
+    # The factory target must be the zero-arg app_from_env, never build_app.
+    factory_arg = cmd[cmd.index("--factory") + 1]
+    assert factory_arg == "ophelian.runtime.fastapi_runtime:app_from_env"
+    assert "build_app" not in factory_arg
+
+    # The spawn must export the env vars app_from_env reads.
+    env = captured["env"]
+    assert isinstance(env, dict)
+    assert env["OPHELIAN_FRAMEWORK"] == "sklearn"
+    assert Path(env["OPHELIAN_MODEL_PATH"]).exists()
+
+    # The named factory must exist and be zero-arg callable (the exact
+    # contract `uvicorn --factory` relies on). This is what build_app
+    # violated.
+    module_path, _, attr = factory_arg.partition(":")
+    factory = getattr(importlib.import_module(module_path), attr)
+    import inspect
+
+    required = [
+        p
+        for p in inspect.signature(factory).parameters.values()
+        if p.default is inspect.Parameter.empty
+        and p.kind in (p.POSITIONAL_OR_KEYWORD, p.KEYWORD_ONLY, p.POSITIONAL_ONLY)
+    ]
+    assert required == [], f"factory must be zero-arg, got required params: {required}"

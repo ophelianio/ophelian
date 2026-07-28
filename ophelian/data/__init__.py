@@ -9,8 +9,11 @@ materialise it into something the adapter understands. Today we support:
   plain path — loaded with the lightest dependency available.
 - ``synthetic``: small built-in toy datasets (``iris``, ``moons``, ``classification``)
   for demos that don't ship their own data.
+- ``huggingface``: a text corpus for the HuggingFace adapter, either inline
+  (``options={"texts": [...]}``) or from the Hub (``hf://<id>`` via the
+  optional ``datasets`` library).
 
-Cloud / HuggingFace sources land in later milestones; for now the loader
+Other cloud sources land in later milestones; for now the loader
 records the URI in the manifest so downstream steps know what was requested.
 
 This module is the public entry point. The actual format-specific loaders
@@ -24,6 +27,7 @@ from typing import Any
 
 from ophelian.core.nodes import Data
 from ophelian.data.loaders import (
+    _materialize_huggingface,
     _materialize_inline,
     _materialize_local_file,
     _materialize_synthetic,
@@ -47,6 +51,8 @@ def materialize(node: Data) -> dict[str, Any]:
         return _materialize_synthetic(node)
     if fmt in {"csv", "json", "jsonl", "parquet"}:
         return _materialize_local_file(node)
+    if fmt == "huggingface":
+        return _materialize_huggingface(node)
     raise NotImplementedError(
         f"Data format {fmt!r} is not yet implemented in the standalone loader."
     )

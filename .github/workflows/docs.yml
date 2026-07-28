@@ -8,7 +8,7 @@ name: Docs
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
     paths:
       - "docs/**"
       - "mkdocs.yml"
@@ -22,7 +22,7 @@ on:
       - "CHANGELOG.md"
       - ".github/workflows/docs.yml"
   pull_request:
-    branches: [main]
+    branches: [main, dev]
     paths:
       - "docs/**"
       - "mkdocs.yml"

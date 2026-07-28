@@ -86,6 +86,76 @@ def _materialize_local_file(node: Data) -> dict[str, Any]:
     raise NotImplementedError(f"Unsupported format {node.format!r}")  # pragma: no cover
 
 
+def _materialize_huggingface(node: Data) -> dict[str, Any]:
+    """Materialise a text corpus for the HuggingFace adapter.
+
+    Returns a JSON-serialisable ``{"texts": [str, ...]}`` payload (the
+    standalone provider round-trips datasets through JSON, so a live
+    ``datasets.Dataset`` object cannot flow here — the HuggingFace
+    adapter tokenises these raw strings itself).
+
+    Two sources are supported:
+
+    * **Inline** — ``options={"texts": ["...", "..."]}``. Fully offline,
+      ideal for the quickstart example and tests.
+    * **Hub** — a ``hf://<dataset-id>`` source, loaded via the optional
+      ``datasets`` library. Pick the text column with
+      ``options={"text_column": "..."}`` (default ``"text"``), the split
+      with ``options={"split": "..."}`` (default ``"train"``), and cap
+      rows with ``options={"limit": N}``.
+    """
+    options = node.options or {}
+
+    # Inline text — no network, no extra dependency.
+    if "texts" in options:
+        texts = [str(t) for t in options["texts"]]
+        if not texts:
+            raise ValueError(
+                "Data(format='huggingface') with inline texts requires a "
+                "non-empty options={'texts': [...]}"
+            )
+        return {"texts": texts}
+
+    # Hub dataset — needs the `datasets` package (ships with the
+    # `huggingface` extra).
+    source = node.source or ""
+    if source.startswith("hf://"):
+        try:
+            from datasets import load_dataset
+        except ImportError as exc:
+            raise NotImplementedError(
+                "Loading a HuggingFace Hub dataset requires the `datasets` "
+                "package: install `ophelian[huggingface]` (or `pip install "
+                "datasets`), or pass inline text via "
+                "options={'texts': [...]}."
+            ) from exc
+
+        name = source.removeprefix("hf://")
+        split = options.get("split", "train")
+        text_column = options.get("text_column", "text")
+        # Revision pinning is the caller's responsibility (same contract as
+        # the model adapters): pass options={'revision': '<sha-or-tag>'} to
+        # fetch a fixed dataset snapshot instead of the mutable branch head.
+        revision = options.get("revision")
+        dataset = load_dataset(name, split=split, revision=revision)
+        if text_column not in dataset.column_names:
+            raise KeyError(
+                f"Data(format='huggingface') source {source!r} has no column "
+                f"{text_column!r}; available columns: {dataset.column_names}. "
+                "Set options={'text_column': '...'}."
+            )
+        column = dataset[text_column]
+        limit = options.get("limit")
+        if limit is not None:
+            column = column[: int(limit)]
+        return {"texts": [str(t) for t in column]}
+
+    raise ValueError(
+        "Data(format='huggingface') needs either options={'texts': [...]} "
+        "or an 'hf://<dataset-id>' source."
+    )
+
+
 def _resolve_local_path(source: str) -> Path:
     """Turn a ``file://`` / plain / ``s3://`` source into a local :class:`Path`.
 
